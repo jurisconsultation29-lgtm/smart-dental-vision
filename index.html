@@ -88,6 +88,15 @@
   .manuel { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
   .manuel button { padding:7px 12px; font-size:12px; }
 
+  .miniature { position:relative; width:76px; height:76px; border-radius:10px; overflow:hidden; border:2px solid var(--bordure); cursor:pointer; }
+  .miniature.active { border-color:var(--accent); }
+  .miniature img { width:100%; height:100%; object-fit:cover; display:block; }
+  .miniature .supprimer {
+    position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%;
+    background:rgba(0,0,0,0.65); color:#fff; border:none; font-size:11px; line-height:18px; padding:0; cursor:pointer;
+  }
+  .miniature .supprimer:hover { background:var(--rouge); }
+
   ::selection { background: var(--accent-doux); }
 </style>
 </head>
@@ -121,6 +130,17 @@
 <div class="corps">
   <!-- Colonne gauche -->
   <div>
+    <div class="panneau" style="border-color:var(--accent);">
+      <div class="titre-panneau">📷 Port / Caméra dentaire — à sélectionner ici</div>
+      <select id="cameraSource" style="margin-bottom:10px;">
+        <option value="">Caméra par défaut du système</option>
+      </select>
+      <div style="font-size:11px;color:var(--attenue);margin-bottom:10px;">
+        Branchez votre caméra dentaire USB, puis cliquez sur "Rafraîchir" ci-dessous : elle apparaîtra dans la liste (souvent nommée « USB Video Device » ou le nom du fabricant). Sélectionnez-la avant de démarrer la caméra plus bas.
+      </div>
+      <button class="bouton primaire" onclick="rafraichirCameras()">🔄 Rafraîchir la liste des caméras</button>
+    </div>
+
     <div class="panneau">
       <div class="titre-panneau">Informations patient</div>
       <div class="grille-2">
@@ -131,11 +151,16 @@
         <input type="text" id="motif" placeholder="Motif de l'examen" style="grid-column:1 / span 2" value="Contrôle de routine" />
       </div>
 
-      <div class="titre-panneau">Clé API Anthropic (pour l'analyse IA réelle)</div>
-      <input type="password" id="cleApi" placeholder="sk-ant-..." oninput="executerDiagnostic()" />
-      <div style="font-size:11px;color:var(--attenue);margin-top:6px;">
+      <div class="titre-panneau">Fournisseur IA</div>
+      <select id="fournisseurIA" onchange="majPlaceholderCle()" style="margin-bottom:10px;">
+        <option value="google" selected>Google — Gemini (vision)</option>
+        <option value="anthropic">Anthropic — Claude (vision)</option>
+      </select>
+      <div class="titre-panneau">Clé API</div>
+      <input type="password" id="cleApi" placeholder="AIza..." oninput="executerDiagnostic()" />
+      <div style="font-size:11px;color:var(--attenue);margin-top:6px;" id="aideCleApi">
         Utilisée uniquement dans votre navigateur, jamais envoyée ailleurs ni sauvegardée. Nécessaire pour que l'analyse IA fonctionne en dehors de l'aperçu de chat.
-        Obtenez une clé sur console.anthropic.com si besoin.
+        Obtenez une clé gratuite sur aistudio.google.com/app/apikey.
       </div>
     </div>
 
@@ -146,6 +171,10 @@
       </div>
 
       <div id="blocCamera">
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--attenue);margin-bottom:10px;">
+          <input type="checkbox" id="caseAnalyseContinue" onchange="basculerAnalyseContinue()" />
+          Analyse IA en continu pendant la capture vidéo (toutes les 6 secondes)
+        </label>
         <div class="zone-camera">
           <video id="video" autoplay playsinline muted style="display:none;"></video>
           <div class="message-camera" id="messageCamera">Caméra non démarrée.</div>
@@ -167,9 +196,16 @@
       </div>
 
       <div id="blocImage" style="display:none;margin-top:16px;">
-        <div class="titre-panneau">Image capturée</div>
+        <div class="titre-panneau">Images capturées</div>
+        <div id="galerieImages" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;"></div>
+
+        <div class="titre-panneau">Image active pour l'analyse</div>
         <img class="apercu" id="apercuImage" />
         <div id="messageQualite" style="font-size:13px;margin-top:8px;"></div>
+        <div class="barre-actions">
+          <button class="bouton" id="btnTelecharger" onclick="telechargerImageActive()">💾 Enregistrer / Télécharger</button>
+          <button class="bouton" id="btnSupprimerActive" onclick="supprimerImageActive()" style="border-color:var(--rouge);color:var(--rouge);">🗑️ Supprimer / Effacer</button>
+        </div>
         <div class="barre-actions">
           <button class="bouton primaire" id="btnAnalyser" onclick="lancerAnalyseIA()">Lancer l'analyse IA</button>
           <button class="bouton" id="btnRapport" onclick="imprimerRapport()" style="display:none;">Générer le rapport</button>
@@ -215,6 +251,10 @@
   let imageCapturee = null;
   let dernierResultat = null;
   let statuts = {};
+  let galerie = []; // { id, dataUrl }
+  let imageActiveId = null;
+  let intervalleAnalyseContinue = null;
+  let analyseEnCoursFlag = false;
 
   const STATUTS = [
     { valeur:"en_attente", label:"En attente" },
@@ -223,6 +263,30 @@
     { valeur:"a_surveiller", label:"À surveiller" },
     { valeur:"faux_positif", label:"Faux positif" },
   ];
+
+  function majPlaceholderCle() {
+    const fournisseur = document.getElementById('fournisseurIA').value;
+    const cleInput = document.getElementById('cleApi');
+    const aide = document.getElementById('aideCleApi');
+    const infos = {
+      google: { placeholder: 'AIza...', aide: "Obtenez une clé gratuite sur aistudio.google.com/app/apikey." },
+      anthropic: { placeholder: 'sk-ant-...', aide: "Obtenez une clé sur console.anthropic.com." },
+    };
+    const info = infos[fournisseur];
+    cleInput.placeholder = info.placeholder;
+    aide.textContent = "Utilisée uniquement dans votre navigateur, jamais envoyée ailleurs ni sauvegardée. " + info.aide;
+  }
+
+  // --- Sélection de la caméra source (ex: caméra dentaire USB) ---
+  async function rafraichirCameras() {
+    const select = document.getElementById('cameraSource');
+    try {
+      const appareils = await navigator.mediaDevices.enumerateDevices();
+      const cams = appareils.filter(a => a.kind === 'videoinput');
+      select.innerHTML = '<option value="">Caméra par défaut du système</option>' +
+        cams.map((c, i) => `<option value="${c.deviceId}">${c.label || 'Caméra ' + (i+1)}</option>`).join('');
+    } catch (e) { /* liste indisponible avant autorisation, ce n'est pas bloquant */ }
+  }
 
   function patientActuel() {
     return {
@@ -270,7 +334,7 @@
     // 3. Clé API IA
     const cle = document.getElementById('cleApi')?.value.trim();
     if (cle) {
-      lignes.push(ok('Clé API Anthropic renseignée — l\'analyse IA peut être lancée.'));
+      lignes.push(ok('Clé API renseignée — l\'analyse IA peut être lancée.'));
     } else {
       lignes.push(warn('Aucune clé API Anthropic renseignée — l\'analyse IA ne fonctionnera pas tant que ce champ est vide.'));
     }
@@ -278,7 +342,11 @@
     document.getElementById('diagContenu').innerHTML = lignes.join('<br/>');
   }
 
-  document.addEventListener('DOMContentLoaded', executerDiagnostic);
+  document.addEventListener('DOMContentLoaded', () => {
+    executerDiagnostic();
+    rafraichirCameras();
+    majPlaceholderCle();
+  });
 
   // --- Pont matériel réel : ESP32 via Web Serial API (Chrome/Edge PC uniquement) ---
   let portSerie = null;
@@ -358,8 +426,12 @@
       msg.textContent = "getUserMedia indisponible. Ouvrez cette page via http://localhost (petit serveur local) plutôt qu'en double-clic direct, ou utilisez l'onglet Importer.";
       return;
     }
+    const deviceId = document.getElementById('cameraSource').value;
+    const contraintesVideo = deviceId
+      ? { deviceId: { exact: deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+      : { width: { ideal: 1920 }, height: { ideal: 1080 } };
     try {
-      fluxCamera = await navigator.mediaDevices.getUserMedia({ audio:false, video:{ width:{ideal:1920}, height:{ideal:1080} } });
+      fluxCamera = await navigator.mediaDevices.getUserMedia({ audio:false, video: contraintesVideo });
       const video = document.getElementById('video');
       video.srcObject = fluxCamera;
       video.style.display = 'block';
@@ -369,6 +441,7 @@
       document.getElementById('btnCapturer').style.display = 'inline-block';
       definirLED('verte','fixe');
       jouerBuzzer('connexion');
+      rafraichirCameras(); // les libellés des caméras deviennent disponibles après autorisation
     } catch (e) {
       const raisons = {
         NotAllowedError: "Autorisation caméra refusée par le navigateur.",
@@ -390,6 +463,29 @@
     document.getElementById('btnDemarrer').style.display = 'inline-block';
     document.getElementById('btnArreter').style.display = 'none';
     document.getElementById('btnCapturer').style.display = 'none';
+    document.getElementById('caseAnalyseContinue').checked = false;
+    arreterAnalyseContinue();
+  }
+
+  function basculerAnalyseContinue() {
+    const active = document.getElementById('caseAnalyseContinue').checked;
+    if (active && fluxCamera) demarrerAnalyseContinue();
+    else arreterAnalyseContinue();
+  }
+
+  function demarrerAnalyseContinue() {
+    arreterAnalyseContinue();
+    intervalleAnalyseContinue = setInterval(async () => {
+      if (analyseEnCoursFlag) return; // on ne superpose pas deux analyses
+      const video = document.getElementById('video');
+      if (!video || video.style.display === 'none') return;
+      capturerDepuisCamera();
+      await lancerAnalyseIA();
+    }, 6000);
+  }
+
+  function arreterAnalyseContinue() {
+    if (intervalleAnalyseContinue) { clearInterval(intervalleAnalyseContinue); intervalleAnalyseContinue = null; }
   }
 
   function capturerDepuisCamera() {
@@ -434,13 +530,33 @@
   }
 
   async function traiterNouvelleImage(dataUrl) {
-    imageCapturee = dataUrl;
+    const id = 'img-' + Date.now() + '-' + Math.floor(Math.random()*1000);
+    galerie.push({ id, dataUrl });
+    selectionnerImage(id);
+    afficherGalerie();
+    document.getElementById('blocImage').style.display = 'block';
+  }
+
+  function afficherGalerie() {
+    const conteneur = document.getElementById('galerieImages');
+    conteneur.innerHTML = galerie.map(img => `
+      <div class="miniature ${img.dataUrl === imageCapturee ? 'active' : ''}" onclick="selectionnerImage('${img.id}')">
+        <img src="${img.dataUrl}" />
+        <button class="supprimer" onclick="event.stopPropagation(); supprimerImage('${img.id}')" title="Supprimer">×</button>
+      </div>`).join('');
+  }
+
+  async function selectionnerImage(id) {
+    const img = galerie.find(i => i.id === id);
+    if (!img) return;
+    imageCapturee = img.dataUrl;
+    imageActiveId = img.id;
     dernierResultat = null; statuts = {};
     document.getElementById('resultats').innerHTML = '<p style="color:var(--attenue);font-size:13px;">Aucune analyse pour le moment.</p>';
     document.getElementById('btnRapport').style.display = 'none';
-    document.getElementById('blocImage').style.display = 'block';
-    document.getElementById('apercuImage').src = dataUrl;
-    const q = await analyserQualitePixels(dataUrl);
+    document.getElementById('apercuImage').src = imageCapturee;
+    afficherGalerie();
+    const q = await analyserQualitePixels(imageCapturee);
     const el = document.getElementById('messageQualite');
     el.style.color = q.suffisante ? 'var(--accent)' : 'var(--rouge)';
     el.textContent = q.suffisante
@@ -448,14 +564,95 @@
       : `Qualité insuffisante (luminosité: ${q.luminosite}, netteté: ${q.nettete}) — vous pouvez tout de même analyser, mais reprendre la photo est recommandé.`;
   }
 
-  // --- Analyse IA réelle (nécessite votre clé API Anthropic) ---
+  function supprimerImage(id) {
+    galerie = galerie.filter(i => i.id !== id);
+    if (galerie.length === 0) {
+      imageCapturee = null; imageActiveId = null; dernierResultat = null; statuts = {};
+      document.getElementById('blocImage').style.display = 'none';
+    } else {
+      const dernier = galerie[galerie.length - 1];
+      selectionnerImage(dernier.id);
+    }
+    afficherGalerie();
+  }
+
+  // Bouton "Supprimer / Effacer" sous l'image active : jette la capture en cours.
+  function supprimerImageActive() {
+    if (!imageActiveId) return;
+    supprimerImage(imageActiveId);
+  }
+
+  // Bouton "Enregistrer / Télécharger" : sauvegarde le cliché actif sur le disque de l'utilisateur.
+  function telechargerImageActive() {
+    if (!imageCapturee) return;
+    const lien = document.createElement('a');
+    const patient = patientActuel();
+    const horodatage = new Date().toISOString().replace(/[:.]/g, '-');
+    const nomFichier = `smart-dental-${(patient.dossier || 'patient').replace(/\s+/g,'_')}-${horodatage}.jpg`;
+    lien.href = imageCapturee;
+    lien.download = nomFichier;
+    document.body.appendChild(lien);
+    lien.click();
+    document.body.removeChild(lien);
+  }
+
+  // --- Analyse IA réelle (multi-fournisseur : Anthropic, OpenAI, Google) ---
+  const PROMPT_SYSTEME = `Tu es un outil d'aide à l'analyse pour un chirurgien-dentiste, rédigeant à la manière d'un compte-rendu structuré (style compte-rendu de radiologie, adapté à une photo intra-orale). Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant/après, sans balises markdown, au format exact : {"qualiteSuffisante": booléen, "commentaireQualite": "string", "technique": "string", "detections": [{"dent": "string", "type": "carie ou tartre ou autre", "localisation": "string", "confiance": nombre entre 0 et 100, "description": "string"}], "impression": "string"}. Utilise un vocabulaire de suspicion ("zone compatible avec", "suspicion de"), jamais un diagnostic définitif. Si rien de fiable n'est identifiable, retourne detections vide.`;
+
+  function extraireJSON(texte) {
+    const nettoye = (texte || '{}').replace(/```json|```/g, '').trim();
+    return JSON.parse(nettoye);
+  }
+
+  async function appelerAnthropic(cle, base64, mediaType, texteUtilisateur) {
+    const reponse = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json', 'x-api-key': cle,
+        'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6', max_tokens: 1000, system: PROMPT_SYSTEME,
+        messages: [{ role: 'user', content: [
+          { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+          { type: 'text', text: texteUtilisateur }
+        ]}]
+      })
+    });
+    const data = await reponse.json();
+    if (data.error) throw new Error(data.error.message || 'Erreur API Anthropic');
+    const bloc = (data.content || []).find(b => b.type === 'text');
+    return extraireJSON(bloc?.text);
+  }
+
+  async function appelerGoogle(cle, base64, mediaType, texteUtilisateur) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(cle)}`;
+    const reponse = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: PROMPT_SYSTEME }] },
+        contents: [{ parts: [
+          { text: texteUtilisateur },
+          { inline_data: { mime_type: mediaType, data: base64 } }
+        ]}],
+        generationConfig: { response_mime_type: 'application/json' }
+      })
+    });
+    const data = await reponse.json();
+    if (data.error) throw new Error(data.error.message || 'Erreur API Google Gemini');
+    return extraireJSON(data.candidates?.[0]?.content?.parts?.[0]?.text);
+  }
+
   async function lancerAnalyseIA() {
     const cle = document.getElementById('cleApi').value.trim();
+    const fournisseur = document.getElementById('fournisseurIA').value;
     const erreurDiv = document.getElementById('erreurAnalyse');
     erreurDiv.textContent = '';
     if (!imageCapturee) return;
-    if (!cle) { erreurDiv.textContent = "Renseignez votre clé API Anthropic ci-dessus pour lancer une analyse réelle."; return; }
+    if (!cle) { erreurDiv.textContent = "Renseignez votre clé API ci-dessus pour lancer une analyse réelle."; return; }
 
+    analyseEnCoursFlag = true;
     document.getElementById('btnAnalyser').disabled = true;
     document.getElementById('btnAnalyser').textContent = 'Analyse IA en cours…';
     definirLED('jaune','clignotant');
@@ -466,32 +663,11 @@
       const typesAcceptes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
       const mediaType = entete && typesAcceptes.includes(entete[1]) ? entete[1] : 'image/jpeg';
       const patient = patientActuel();
-      const reponse = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': cle,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 1000,
-          system: `Tu es un outil d'aide à l'analyse pour un chirurgien-dentiste, rédigeant à la manière d'un compte-rendu structuré (style compte-rendu de radiologie, adapté à une photo intra-orale). Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant/après, sans balises markdown, au format exact : {"qualiteSuffisante": booléen, "commentaireQualite": "string", "technique": "string", "detections": [{"dent": "string", "type": "carie ou tartre ou autre", "localisation": "string", "confiance": nombre entre 0 et 100, "description": "string"}], "impression": "string"}. Utilise un vocabulaire de suspicion ("zone compatible avec", "suspicion de"), jamais un diagnostic définitif. Si rien de fiable n'est identifiable, retourne detections vide.`,
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-              { type: 'text', text: `Analyse cette photo intra-orale (motif : ${patient.motif}). Identifie les zones suspectes de tartre ou carie et rédige une impression de synthèse.` }
-            ]
-          }]
-        })
-      });
-      const data = await reponse.json();
-      if (data.error) throw new Error(data.error.message || 'Erreur API');
-      const bloc = (data.content || []).find(b => b.type === 'text');
-      const brut = (bloc?.text || '{}').replace(/```json|```/g, '').trim();
-      const parse = JSON.parse(brut);
+      const texteUtilisateur = `Analyse cette photo intra-orale (motif : ${patient.motif}). Identifie les zones suspectes de tartre ou carie et rédige une impression de synthèse.`;
+
+      const appels = { anthropic: appelerAnthropic, google: appelerGoogle };
+      const parse = await appels[fournisseur](cle, base64, mediaType, texteUtilisateur);
+
       dernierResultat = parse;
       statuts = {}; (parse.detections || []).forEach((_, i) => statuts[i] = 'en_attente');
       afficherResultats(parse);
@@ -503,6 +679,7 @@
       erreurDiv.textContent = "L'analyse IA a échoué : " + e.message;
       definirLED('rouge','clignotant'); jouerBuzzer('erreur');
     } finally {
+      analyseEnCoursFlag = false;
       document.getElementById('btnAnalyser').disabled = false;
       document.getElementById('btnAnalyser').textContent = "Lancer l'analyse IA";
     }
