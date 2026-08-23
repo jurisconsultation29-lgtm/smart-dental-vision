@@ -619,7 +619,7 @@
         ]}]
       })
     });
-    const data = await reponse.json();
+    const data = await reponse.json()
     if (data.error) throw new Error(data.error.message || 'Erreur API Anthropic');
     const bloc = (data.content || []).find(b => b.type === 'text');
     return extraireJSON(bloc?.text);
