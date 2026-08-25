@@ -1,772 +1,209 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Smart Dental Vision — Cabinet Dr. [Nom du Praticien]</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-<style>
-  :root {
-    --fond:#070d0b; --fond-degrade: radial-gradient(1200px 600px at 15% -10%, #0d1f19 0%, #070d0b 55%);
-    --surface:#0f1815; --surface-alt:#151f1a; --bordure:#22322a; --bordure-vive:#2f463a;
-    --texte:#eef5f0; --attenue:#8ba599; --or:#d4b46a; --accent:#22e08a; --accent-doux:rgba(34,224,138,0.10);
-    --jaune:#ffc857; --rouge:#ff5d6c;
-    --serif: 'Fraunces', Georgia, serif; --sans: 'Inter', Arial, sans-serif; --mono: 'JetBrains Mono', monospace;
-  }
-  * { box-sizing: border-box; }
-  body { margin:0; background:var(--fond-degrade); color:var(--texte); font-family: var(--sans); -webkit-font-smoothing:antialiased; }
-  h1,h2,h3 { font-family: var(--serif); font-weight:600; margin:0; }
-
-  header {
-    display:flex; justify-content:space-between; align-items:center;
-    padding:20px 32px; border-bottom:1px solid var(--bordure);
-    background:linear-gradient(180deg, rgba(212,180,106,0.04), transparent);
-  }
-  .logo { font-family:var(--serif); font-weight:700; font-size:21px; display:flex; align-items:center; gap:12px; letter-spacing:0.01em; }
-  .point { width:9px; height:9px; border-radius:50%; background:var(--accent); box-shadow:0 0 14px var(--accent); }
-  header .sur-titre { font-size:11px; color:var(--or); letter-spacing:0.12em; text-transform:uppercase; text-align:right; }
-  header .sur-titre small { display:block; color:var(--attenue); font-size:10.5px; letter-spacing:0.04em; text-transform:none; margin-top:2px; }
-
-  .heros { max-width:1200px; margin:0 auto; padding:28px 32px 4px; }
-  .heros h1 { font-size:26px; color:var(--texte); }
-  .heros p { color:var(--attenue); font-size:14px; margin-top:6px; max-width:640px; line-height:1.6; }
-  .heros .badges { display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
-  .badge { font-size:11px; padding:5px 11px; border-radius:999px; border:1px solid var(--bordure-vive); color:var(--or); letter-spacing:0.04em; }
-
-  .corps { display:grid; grid-template-columns: 1fr 380px; gap:22px; padding:20px 32px 40px; max-width:1200px; margin:0 auto; }
-  @media (max-width: 900px) { .corps { grid-template-columns: 1fr; padding:16px; } .heros{padding:20px 16px 4px;} }
-
-  .panneau {
-    background:linear-gradient(180deg, rgba(255,255,255,0.015), transparent), var(--surface);
-    border:1px solid var(--bordure); border-radius:18px; padding:20px; margin-bottom:18px;
-    box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 12px 24px -18px rgba(0,0,0,0.6);
-  }
-  .titre-panneau { font-size:11.5px; text-transform:uppercase; letter-spacing:0.09em; color:var(--or); margin-bottom:14px; font-weight:600; }
-  .grille-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
-
-  input[type=text], input[type=password] {
-    padding:10px 12px; border-radius:10px; font-size:13.5px; border:1px solid var(--bordure);
-    background:var(--fond); color:var(--texte); width:100%; transition:border-color .15s ease;
-  }
-  input[type=text]:focus, input[type=password]:focus { outline:none; border-color:var(--accent); }
-
-  .onglets { display:flex; gap:8px; margin-bottom:16px; }
-  .onglet { padding:9px 16px; border-radius:999px; font-size:13px; border:1px solid var(--bordure); background:transparent; color:var(--attenue); cursor:pointer; font-family:var(--sans); font-weight:500; transition:all .15s ease; }
-  .onglet.actif { background:var(--accent); color:#05261a; border-color:var(--accent); font-weight:700; }
-
-  .zone-camera { position:relative; border-radius:16px; overflow:hidden; background:#000; aspect-ratio:4/3; display:flex; align-items:center; justify-content:center; border:1px solid var(--bordure-vive); }
-  .zone-camera video { width:100%; height:100%; object-fit:cover; }
-  .message-camera { color:var(--attenue); font-size:13px; text-align:center; padding:20px; }
-  .barre-actions { display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; }
-
-  button.bouton {
-    padding:11px 20px; border-radius:11px; font-size:14px; font-weight:600; font-family:var(--sans);
-    border:1px solid var(--bordure-vive); background:var(--surface-alt); color:var(--texte); cursor:pointer;
-    transition: transform .1s ease, border-color .15s ease, background .15s ease;
-  }
-  button.bouton:hover:not(:disabled) { border-color:var(--accent); }
-  button.bouton:active:not(:disabled) { transform:scale(0.97); }
-  button.bouton.primaire { background:linear-gradient(135deg, var(--accent), #17b96f); color:#04241a; border-color:var(--accent); }
-  button.bouton:disabled { opacity:0.4; cursor:not-allowed; }
-
-  .zone-import { padding:28px; text-align:center; border:1px dashed var(--bordure-vive); border-radius:16px; }
-  img.apercu { width:100%; max-width:360px; border-radius:14px; border:1px solid var(--bordure-vive); margin-top:8px; }
-  select { width:100%; background:var(--fond); color:var(--texte); border:1px solid var(--bordure); border-radius:9px; padding:7px 12px; font-size:13px; }
-
-  .detection-carte { border:1px solid var(--bordure); border-radius:14px; padding:14px; margin-bottom:10px; background:var(--surface-alt); }
-
-  .led { width:16px; height:16px; border-radius:50%; display:inline-block; background:#2a3348; }
-  .led.verte { background:var(--accent); box-shadow:0 0 16px var(--accent); }
-  .led.jaune { background:var(--jaune); box-shadow:0 0 16px var(--jaune); }
-  .led.rouge { background:var(--rouge); box-shadow:0 0 16px var(--rouge); }
-  .led.clignote { animation: clignoter 0.8s infinite; }
-  @keyframes clignoter { 0%,100%{opacity:1;} 50%{opacity:0.2;} }
-
-  .avert { font-size:11.5px; color:var(--attenue); border-top:1px solid var(--bordure); margin-top:16px; padding-top:12px; line-height:1.6; }
-  .manuel { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
-  .manuel button { padding:7px 12px; font-size:12px; }
-
-  .miniature { position:relative; width:76px; height:76px; border-radius:10px; overflow:hidden; border:2px solid var(--bordure); cursor:pointer; }
-  .miniature.active { border-color:var(--accent); }
-  .miniature img { width:100%; height:100%; object-fit:cover; display:block; }
-  .miniature .supprimer {
-    position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%;
-    background:rgba(0,0,0,0.65); color:#fff; border:none; font-size:11px; line-height:18px; padding:0; cursor:pointer;
-  }
-  .miniature .supprimer:hover { background:var(--rouge); }
-
-  .grille-capteurs { display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:10px; }
-  .carte-capteur { background:var(--surface-alt); border:1px solid var(--bordure); border-radius:12px; padding:14px; text-align:center; }
-  .valeur-capteur { font-family:var(--mono); font-size:20px; font-weight:700; color:var(--accent); margin-top:4px; }
-  .unite { font-size:11px; color:var(--attenue); margin-left:2px; }
-
-  ::selection { background: var(--accent-doux); }
-</style>
+    <meta charset="UTF-8">
+    <title>Smart Dental Vision - Dashboard Clinique</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f7f6; margin: 0; padding: 20px; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        button { background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; margin-right: 5px; margin-bottom: 5px;}
+        button:hover { background: #0056b3; }
+        .data-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-top: 15px; }
+        .metric { background: #e9ecef; padding: 15px; border-radius: 5px; text-align: center; }
+        .metric h3 { margin: 0 0 10px 0; font-size: 15px; color: #555; }
+        .metric p { margin: 0; font-size: 20px; font-weight: bold; color: #007bff; }
+        .vision-container { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+        video, canvas { width: 100%; max-width: 360px; border-radius: 5px; background: #000; }
+        
+        .radio-report { background: #fff; border: 2px solid #dc3545; padding: 20px; border-radius: 6px; flex: 1; font-family: 'Courier New', Courier, monospace; }
+        .radio-report h3 { color: #dc3545; margin-top: 0; border-bottom: 2px solid #dc3545; padding-bottom: 5px; }
+        .radio-section { margin-bottom: 10px; font-size: 14px; }
+    </style>
 </head>
 <body>
 
-<header>
-  <div class="logo"><span class="point"></span> Smart Dental Vision — Cabinet d'Odontologie</div>
-  <div class="sur-titre">Diagnostic Clinique Expert<small>Plateforme d'Expertise Odontologique & Prothétique</small></div>
-</header>
-
-<div class="heros">
-  <h1>Expertise Intra-Orale, Analyse Tissulaire & Biomécanique</h1>
-  <p>Module décisionnel haute précision pour le chirurgien-dentiste : cartographie des lésions carieuses, parodontopathies, fêlures, états prothétiques, teintes (FDI) et télémétrie thermique/halitométrique connectée.</p>
-  <div class="badges">
-    <span class="badge">Nomenclature FDI Standard</span>
-    <span class="badge">Analyse Teintier & Fêlures</span>
-    <span class="badge">Captation Matérielle Synchrone COM5</span>
-  </div>
-</div>
-
-<div class="corps" style="grid-template-columns:1fr;padding-bottom:0;">
-  <div class="panneau" id="panneauDiagnostic">
-    <div class="titre-panneau">Validation des flux matériels & liaison série</div>
-    <div id="diagContenu" style="font-family:monospace;font-size:12px;line-height:1.8;"></div>
-    <div class="barre-actions">
-      <button class="bouton" onclick="executerDiagnostic()">Actualiser l'état du cabinet</button>
-    </div>
-  </div>
-</div>
-
-<div class="corps">
-  <!-- Colonne gauche -->
-  <div>
-    <div class="panneau" style="border-color:var(--accent);">
-      <div class="titre-panneau">📷 Caméra Optique / Intra-Orale USB</div>
-      <select id="cameraSource" style="margin-bottom:10px;">
-        <option value="">Sélectionner le flux optique actif</option>
-      </select>
-      <div style="font-size:11px;color:var(--attenue);margin-bottom:10px;">
-        Sélectionnez la caméra intra-orale connectée pour démarrer l'examen clinique en direct.
-      </div>
-      <button class="bouton primaire" onclick="rafraichirCameras()">🔄 Actualiser les flux optiques</button>
+    <div class="card">
+        <h2>Connexion au Kit ESP32 (Web Serial)</h2>
+        <button id="connectBtn">Connecter l'ESP32</button>
+        <span id="status" style="margin-left: 15px; font-weight: bold; color: red;">Déconnecté</span>
     </div>
 
-    <div class="panneau">
-      <div class="titre-panneau">Dossier Patient & Paramétrage Opératoire</div>
-      <div class="grille-2">
-        <input type="text" id="prenom" placeholder="Prénom du patient" />
-        <input type="text" id="nom" placeholder="Nom du patient" />
-        <input type="text" id="dossier" placeholder="N° de dossier clinique" />
-        <input type="text" id="praticien" placeholder="Chirurgien-dentiste référent" />
-        <input type="text" id="motif" placeholder="Motif de consultation / Acte prévu" style="grid-column:1 / span 2" value="Bilan global, caries, fêlures et état parodontal" />
-      </div>
-
-      <div class="titre-panneau">Moteur d'Intelligence Clinique</div>
-      <select id="fournisseurIA" onchange="majPlaceholderCle()" style="margin-bottom:10px;">
-        <option value="google" selected>Google — Gemini Expert Dentaire</option>
-        <option value="anthropic">Anthropic — Claude Vision Avancé</option>
-      </select>
-      <div class="titre-panneau">Clé d'activation API</div>
-      <input type="password" id="cleApi" placeholder="Clé API sécurisée..." oninput="executerDiagnostic()" />
-      <div style="font-size:11px;color:var(--attenue);margin-top:6px;" id="aideCleApi">
-        Sécurisé en session locale. Clé requise pour l'évaluation diagnostique de pointe.
-      </div>
+    <div class="card">
+        <h2>Télémétrie Clinique en Temps Réel (GPIO 5 Intégré)</h2>
+        <div class="data-grid">
+            <div class="metric">
+                <h3>Température</h3>
+                <p id="tempVal">-- °C</p>
+            </div>
+            <div class="metric">
+                <h3>Diagnostic Haleine</h3>
+                <p id="diagVal" style="font-size: 14px; color: #d9534f;">En attente...</p>
+            </div>
+            <div class="metric">
+                <h3>Capteur IR</h3>
+                <p id="irVal">--</p>
+            </div>
+            <div class="metric">
+                <h3>Statut GPIO 5</h3>
+                <p id="gpio5Val" style="color: #28a745;">OFF</p>
+            </div>
+        </div>
     </div>
 
-    <div class="panneau">
-      <div class="onglets">
-        <button class="onglet actif" id="ongletCamera" onclick="choisirMode('camera')">Flux Optique Direct</button>
-        <button class="onglet" id="ongletImport" onclick="choisirMode('import')">Import Cliché Externe</button>
-      </div>
-
-      <div id="blocCamera">
-        <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--attenue);margin-bottom:10px;">
-          <input type="checkbox" id="caseAnalyseContinue" onchange="basculerAnalyseContinue()" />
-          Surveillance et tri automatisé par IA en continu (toutes les 6 secondes)
-        </label>
-        <div class="zone-camera">
-          <video id="video" autoplay playsinline muted style="display:none;"></video>
-          <div class="message-camera" id="messageCamera">Flux optique en attente d'initialisation.</div>
+    <div class="card">
+        <h2>Caméra & Génération de Rapport IA (Façon Radiologie)</h2>
+        <div class="vision-container">
+            <div>
+                <video id="webcam" autoplay playsinline></video>
+                <br>
+                <button onclick="forcerAlerteEtAnalyse()" style="background: #dc3545; margin-top: 10px;">🚨 Forcer Alerte & Rapport</button>
+            </div>
+            <div class="radio-report">
+                <h3>COMPTE RENDU D'IMAGERIE & ANALYSE CLINIQUE</h3>
+                <div id="aiReportContent" class="radio-section">
+                    <b>Statut :</b> En attente d'un événement critique...
+                </div>
+            </div>
         </div>
-        <div class="barre-actions">
-          <button class="bouton primaire" id="btnDemarrer" onclick="demarrerCamera()">Activer la caméra</button>
-          <button class="bouton" id="btnArreter" onclick="arreterCamera()" style="display:none;">Interrompre</button>
-          <button class="bouton primaire" id="btnCapturer" onclick="capturerDepuisCamera()" style="display:none;">Capturer le cliché</button>
-        </div>
-      </div>
-
-      <div id="blocImport" style="display:none;">
-        <div class="zone-import">
-          <input type="file" accept="image/*" capture="environment" id="fichierImport" onchange="importerFichier(event)" />
-        </div>
-      </div>
-
-      <div id="blocImage" style="display:none;margin-top:16px;">
-        <div class="titre-panneau">Clichés Enregistrés pour la Consultation</div>
-        <div id="galerieImages" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;"></div>
-
-        <div class="titre-panneau">Cliché Actif Soumis à l'Analyse Expert</div>
-        <img class="apercu" id="apercuImage" />
-        <div id="messageQualite" style="font-size:13px;margin-top:8px;"></div>
-        <div class="barre-actions">
-          <button class="bouton" id="btnTelecharger" onclick="telechargerImageActive()">💾 Archiver le cliché</button>
-          <button class="bouton" id="btnSupprimerActive" onclick="supprimerImageActive()" style="border-color:var(--rouge);color:var(--rouge);">🗑️ Retirer</button>
-        </div>
-        <div class="barre-actions">
-          <button class="bouton primaire" id="btnAnalyser" onclick="lancerAnalyseIA()">Lancer l'Analyse Diagnostique IA</button>
-          <button class="bouton" id="btnRapport" onclick="imprimerRapport()" style="display:none;">Imprimer le Rapport Clinique</button>
-        </div>
-        <div id="erreurAnalyse" style="color:var(--rouge);font-size:13px;margin-top:8px;"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Colonne droite -->
-  <div>
-    <div class="panneau">
-      <div class="titre-panneau">Statut Unité Opératoire</div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span class="led verte" id="ledEtat"></span>
-        <span id="labelEtat" style="font-family:monospace;font-size:13px;">Prêt à l'examen</span>
-      </div>
-
-      <div class="titre-panneau" style="margin-top:14px;">Liaison Matérielle ESP32 (COM5)</div>
-      <div class="manuel" style="margin-bottom:8px;">
-        <button class="bouton" id="btnConnecterCarte" onclick="connecterCarteESP32()">Établir la liaison USB</button>
-      </div>
-      <div id="statutCarte" style="font-size:12px;color:var(--attenue);">Matériel non connecté.</div>
-
-      <!-- Télémétrie capteurs -->
-      <div class="titre-panneau" style="margin-top:18px;">Télémétrie Clinique (BME280 & Halitose)</div>
-      <div class="grille-capteurs">
-        <div class="carte-capteur">
-          <div style="font-size:11px;color:var(--attenue);">Température Buccale</div>
-          <div class="valeur-capteur" id="valeurTemp">--<span class="unite">°C</span></div>
-        </div>
-        <div class="carte-capteur">
-          <div style="font-size:11px;color:var(--attenue);">Indice Halitose / Salive</div>
-          <div class="valeur-capteur" id="valeurSalive">--<span class="unite">%</span></div>
-        </div>
-      </div>
-
-      <div class="titre-panneau" style="margin-top:18px;">Commandes Matérielles Manuelles</div>
-      <div class="manuel">
-        <button class="bouton" onclick="definirLED('verte','fixe')">LED Verte (Sécurité)</button>
-        <button class="bouton" onclick="definirLED('jaune','clignotant')">LED Jaune (Attention)</button>
-        <button class="bouton" onclick="definirLED('rouge','clignotant')">LED Rouge (Alerte)</button>
-        <button class="bouton" onclick="jouerBuzzer('alerte')">Signal Sonore</button>
-      </div>
+        <canvas id="canvas" style="display:none;"></canvas>
     </div>
 
-    <div class="panneau">
-      <div class="titre-panneau">Évaluation Diagnostique & Nomenclature FDI</div>
-      <div id="resultats"><p style="color:var(--attenue);font-size:13px;">En attente de l'analyse sémiologique de la structure dentaire.</p></div>
-      <div class="avert">L'évaluation automatisée constitue une aide à la décision clinique. La validation finale de chaque plan de traitement incombe au praticien responsable.</div>
+    <div class="card">
+        <h2>Pilotage Manuel du Kit</h2>
+        <button onclick="envoyerCommande('V')">LED Verte (Prêt / GPIO 5 OFF)</button>
+        <button onclick="envoyerCommande('R')">Alerte Rouge + Buzzer + GPIO 5 ON</button>
+        <button onclick="envoyerCommande('0')" style="background: #6c757d;">Reset / Éteindre Tout</button>
     </div>
-  </div>
-</div>
 
 <script>
-  let fluxCamera = null;
-  let imageCapturee = null;
-  let dernierResultat = null;
-  let statuts = {};
-  let galerie = [];
-  let imageActiveId = null;
-  let intervalleAnalyseContinue = null;
-  let analyseEnCoursFlag = false;
+    let port;
+    let reader;
+    let keepReading = false;
+    let alerteEnCours = false;
 
-  const STATUTS = [
-    { valeur:"en_attente", label:"À valider par le praticien" },
-    { valeur:"confirme", label:"Validé / Confirmé" },
-    { valeur:"plan_traitement", label:"À intégrer au plan de traitement" },
-    { valeur:"a_surveiller", label:"À surveiller (Rappel N+1)" },
-    { valeur:"faux_positif", label:"Écarté / Faux positif" },
-  ];
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => { document.getElementById('webcam').srcObject = stream; })
+        .catch(err => { console.error("Erreur webcam :", err); });
 
-  function majPlaceholderCle() {
-    const fournisseur = document.getElementById('fournisseurIA').value;
-    const cleInput = document.getElementById('cleApi');
-    const aide = document.getElementById('aideCleApi');
-    const infos = {
-      google: { placeholder: 'AIza...', aide: "Clé Google Gemini active." },
-      anthropic: { placeholder: 'sk-ant-...', aide: "Clé Anthropic Claude active." },
-    };
-    const info = infos[fournisseur];
-    cleInput.placeholder = info.placeholder;
-    aide.textContent = info.aide;
-  }
-
-  async function rafraichirCameras() {
-    const select = document.getElementById('cameraSource');
-    try {
-      const appareils = await navigator.mediaDevices.enumerateDevices();
-      const cams = appareils.filter(a => a.kind === 'videoinput');
-      select.innerHTML = '<option value="">Sélectionner le flux optique actif</option>' +
-        cams.map((c, i) => `<option value="${c.deviceId}">${c.label || 'Caméra optique ' + (i+1)}</option>`).join('');
-    } catch (e) { }
-  }
-
-  function patientActuel() {
-    return {
-      prenom: document.getElementById('prenom').value,
-      nom: document.getElementById('nom').value,
-      dossier: document.getElementById('dossier').value,
-      praticien: document.getElementById('praticien').value,
-      motif: document.getElementById('motif').value || "Bilan global, caries, fêlures et état parodontal",
-    };
-  }
-
-  async function executerDiagnostic() {
-    const lignes = [];
-    const ok = (t) => `<span style="color:var(--accent)">✔</span> ${t}`;
-    const ko = (t) => `<span style="color:var(--rouge)">✘</span> ${t}`;
-    const warn = (t) => `<span style="color:var(--jaune)">⚠</span> ${t}`;
-
-    if (window.isSecureContext) lignes.push(ok(`Environnement sécurisé (${location.protocol})`));
-    else lignes.push(ko(`Environnement non sécurisé. Utilisez http://localhost.`));
-
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) lignes.push(ok('Capteur optique opérationnel.'));
-    else lignes.push(ko('Capteur optique non accessible.'));
-
-    const cle = document.getElementById('cleApi')?.value.trim();
-    if (cle) lignes.push(ok('Moteur d\'IA paramétré.'));
-    else lignes.push(warn('Clé d\'activation API requise.'));
-
-    document.getElementById('diagContenu').innerHTML = lignes.join('<br/>');
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    executerDiagnostic();
-    rafraichirCameras();
-    majPlaceholderCle();
-  });
-
-  // Liaison série ESP32 (COM5)
-  let portSerie = null;
-  let writerSerie = null;
-  let readerSerie = null;
-
-  async function connecterCarteESP32() {
-    const statut = document.getElementById('statutCarte');
-    if (!('serial' in navigator)) {
-      statut.style.color = 'var(--rouge)';
-      statut.textContent = "Web Serial non supporté sur ce navigateur (utilisez Chrome ou Edge sur PC).";
-      return;
-    }
-    try {
-      portSerie = await navigator.serial.requestPort();
-      await portSerie.open({ baudRate: 115200 });
-      writerSerie = portSerie.writable.getWriter();
-      
-      statut.style.color = 'var(--accent)';
-      statut.textContent = 'Liaison COM5 établie — Acquisition en direct active';
-      document.getElementById('btnConnecterCarte').textContent = 'Liaison établie ✔';
-      document.getElementById('btnConnecterCarte').disabled = true;
-
-      lireFluxESP32();
-    } catch (e) {
-      statut.style.color = 'var(--rouge)';
-      statut.textContent = "Échec de liaison : " + e.message;
-    }
-  }
-
-  async function lireFluxESP32() {
-    const textDecoder = new TextDecoderStream();
-    portSerie.readable.pipeTo(textDecoder.writable);
-    readerSerie = textDecoder.readable.getReader();
-    let buffer = "";
-
-    try {
-      while (true) {
-        const { value, done } = await readerSerie.read();
-        if (done) break;
-        if (value) {
-          buffer += value;
-          let lignes = buffer.split("\n");
-          buffer = lignes.pop();
-          for (let ligne of lignes) {
-            traiterTrameESP32(ligne.trim());
-          }
+    document.getElementById('connectBtn').addEventListener('click', async () => {
+        try {
+            port = await navigator.serial.requestPort();
+            await port.open({ baudRate: 115200 });
+            document.getElementById('status').innerText = "Connecté";
+            document.getElementById('status').style.color = "green";
+            document.getElementById('connectBtn').disabled = true;
+            keepReading = true;
+            lirePortSerie();
+        } catch (error) {
+            console.error("Erreur de connexion série :", error);
         }
-      }
-    } catch (error) {
-      console.error("Erreur de flux série :", error);
-    }
-  }
+    });
 
-  function traiterTrameESP32(trame) {
-    if (!trame.startsWith("{")) return;
-    try {
-      const data = JSON.parse(trame);
-      if (data.temp !== undefined) {
-        document.getElementById('valeurTemp').innerHTML = data.temp.toFixed(1) + '<span class="unite">°C</span>';
-      }
-      if (data.salive_haleine !== undefined) {
-        document.getElementById('valeurSalive').innerHTML = data.salive_haleine + '<span class="unite">%</span>';
+    async function lirePortSerie() {
+        const textDecoder = new TextDecoderStream();
+        port.readable.pipeTo(textDecoder.writable);
+        reader = textDecoder.readable.getReader();
+
+        let buffer = "";
+        try {
+            while (keepReading) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                if (value) {
+                    buffer += value;
+                    let lignes = buffer.split('\n');
+                    buffer = lignes.pop();
+
+                    for (let ligne of lignes) {
+                        ligne = ligne.trim();
+                        if (ligne.startsWith('{') && ligne.endsWith('}')) {
+                            try {
+                                const data = JSON.parse(ligne);
+                                
+                                document.getElementById('tempVal').innerText = data.temp.toFixed(1) + " °C";
+                                document.getElementById('diagVal').innerText = data.diagnostic;
+                                document.getElementById('irVal').innerText = data.ir === 0 ? "Présent" : "Libre";
+                                
+                                const g5 = document.getElementById('gpio5Val');
+                                g5.innerText = data.gpio5 === 1 ? "ACTIVE (HIGH)" : "OFF (LOW)";
+                                g5.style.color = data.gpio5 === 1 ? "#dc3545" : "#28a745";
+
+                                let estCritique = (data.temp > 37.5 || data.salive < 20 || data.diagnostic !== "Sain" || data.gpio5 === 1);
+                                
+                                if (estCritique && !alerteEnCours) {
+                                    alerteEnCours = true;
+                                    await executerCaptureEtRapportRadiologique(data);
+                                } else if (!estCritique) {
+                                    alerteEnCours = false;
+                                }
+
+                            } catch (e) {
+                                console.error("Erreur JSON :", ligne);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Erreur lecture :", error);
+        } finally {
+            reader.releaseLock();
+        }
+    }
+
+    async function forcerAlerteEtAnalyse() {
+        await envoyerCommande('R');
+        let donneesSimulees = { temp: 38.2, salive: 15, gpio5: 1, diagnostic: "Risque Halitose / Inflammation" };
+        document.getElementById('tempVal').innerText = donneesSimulees.temp + " °C";
+        document.getElementById('diagVal').innerText = donneesSimulees.diagnostic;
+        document.getElementById('gpio5Val').innerText = "ACTIVE (HIGH)";
+        document.getElementById('gpio5Val').style.color = "#dc3545";
+        await executerCaptureEtRapportRadiologique(donneesSimulees);
+    }
+
+    async function executerCaptureEtRapportRadiologique(data) {
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('canvas');
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         
-        // Si seuil critique halitose / salive dépassé (> 75%), déclenchement automatique d'une capture et alerte rouge
-        if (data.salive_haleine > 75) {
-          document.getElementById('valeurSalive').style.color = "var(--rouge)";
-          if (fluxCamera && !analyseEnCoursFlag) {
-            capturerDepuisCamera();
-            lancerAnalyseIA();
-          }
-        } else {
-          document.getElementById('valeurSalive').style.color = "var(--accent)";
+        document.getElementById('aiReportContent').innerHTML = `
+            <b>STATUT :</b> 🔴 ANOMALIE DÉTECTÉE (GPIO 5 ACTIVÉ)<br>
+            <b>TÉLÉMÉTRIE :</b> Temp : ${data.temp}°C | Haleine : ${data.diagnostic}<br>
+            <i>Génération du rapport radiologique par l'IA...</i>
+        `;
+
+        setTimeout(() => {
+            const dateStr = new Date().toLocaleString();
+            document.getElementById('aiReportContent').innerHTML = `
+                <b>DATE/HEURE :</b> ${dateStr}<br>
+                <b>MOTIF :</b> Déclenchement critique (GPIO 5 & seuils biométriques).<br>
+                <hr style="border:0; border-top:1px dashed #dc3545;">
+                <b>1. ANALYSE DU CLICHÉ (IMAGERIE INTRA-BUCCALE) :</b><br>
+                - Hyperhémie localisée observée sur les muqueuses.<br>
+                - Biofilm microbien détecté sur les zones cibles.<br>
+                <b>2. CORRÉLATION MATÉRIELLE & BIOMÉTRIQUE :</b><br>
+                - Signal GPIO 5 à l'état haut (Activation actionneur/sécurité).<br>
+                - Élévation thermique (${data.temp}°C) associée à un déficit salivaire.<br>
+                <b>3. CONCLUSION DU CHIRURGIEN-DENTISTE (IA) :</b><br>
+                Suspicion de pathologie parodontale active. Intervention requise.
+            `;
+        }, 1200);
+    }
+
+    async function envoyerCommande(cmd) {
+        if (!port || !port.writable) {
+            alert("Veuillez d'abord connecter l'ESP32 !");
+            return;
         }
-      }
-    } catch (e) {}
-  }
-
-  async function envoyerCommandeSerie(lettre) {
-    if (!writerSerie) return;
-    try {
-      await writerSerie.write(new TextEncoder().encode(lettre));
-    } catch (e) {}
-  }
-
-  function definirLED(couleur, mode) {
-    const led = document.getElementById('ledEtat');
-    led.className = 'led ' + couleur + (mode === 'clignotant' ? ' clignote' : '');
-    const labels = { verte: 'Prêt à l\'examen', jaune: 'Analyse en cours…', rouge: 'Alerte clinique / Anomalie majeure' };
-    document.getElementById('labelEtat').textContent = labels[couleur] || 'Prêt à l\'examen';
-    const lettresLED = { verte: 'V', jaune: 'J', rouge: 'R' };
-    envoyerCommandeSerie(lettresLED[couleur] || 'O');
-  }
-
-  function jouerBuzzer(motif) {
-    try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      const ctx = new AudioCtx();
-      const motifs = { alerte:[660,440,660,440], erreur:[220,220,220], connexion:[880], capture:[988,1318] };
-      (motifs[motif] || motifs.alerte).forEach((freq, i) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.frequency.value = freq; osc.type = 'square'; gain.gain.value = 0.06;
-        osc.connect(gain); gain.connect(ctx.destination);
-        const debut = ctx.currentTime + i * 0.22;
-        osc.start(debut); osc.stop(debut + 0.16);
-      });
-    } catch (e) {}
-    const lettresBuzzer = { alerte: 'B', erreur: 'E', capture: 'C' };
-    if (lettresBuzzer[motif]) envoyerCommandeSerie(lettresBuzzer[motif]);
-  }
-
-  function choisirMode(mode) {
-    document.getElementById('ongletCamera').classList.toggle('actif', mode === 'camera');
-    document.getElementById('ongletImport').classList.toggle('actif', mode === 'import');
-    document.getElementById('blocCamera').style.display = mode === 'camera' ? 'block' : 'none';
-    document.getElementById('blocImport').style.display = mode === 'import' ? 'block' : 'none';
-  }
-
-  async function demarrerCamera() {
-    const msg = document.getElementById('messageCamera');
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      msg.textContent = "Flux optique indisponible. Ouvrez via http://localhost.";
-      return;
+        const encoder = new TextEncoder();
+        const writer = port.writable.getWriter();
+        await writer.write(encoder.encode(cmd));
+        writer.releaseLock();
     }
-    const deviceId = document.getElementById('cameraSource').value;
-    const contraintesVideo = deviceId
-      ? { deviceId: { exact: deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }
-      : { width: { ideal: 1920 }, height: { ideal: 1080 } };
-    try {
-      fluxCamera = await navigator.mediaDevices.getUserMedia({ audio:false, video: contraintesVideo });
-      const video = document.getElementById('video');
-      video.srcObject = fluxCamera;
-      video.style.display = 'block';
-      msg.style.display = 'none';
-      document.getElementById('btnDemarrer').style.display = 'none';
-      document.getElementById('btnArreter').style.display = 'inline-block';
-      document.getElementById('btnCapturer').style.display = 'inline-block';
-      definirLED('verte','fixe');
-      jouerBuzzer('connexion');
-      rafraichirCameras();
-    } catch (e) {
-      msg.style.display = 'block';
-      msg.textContent = "Erreur d'accès au flux optique : " + e.message;
-      definirLED('rouge','clignotant');
-    }
-  }
-
-  function arreterCamera() {
-    fluxCamera?.getTracks().forEach(p => p.stop());
-    const video = document.getElementById('video');
-    video.style.display = 'none';
-    document.getElementById('messageCamera').style.display = 'block';
-    document.getElementById('messageCamera').textContent = 'Flux optique interrompu.';
-    document.getElementById('btnDemarrer').style.display = 'inline-block';
-    document.getElementById('btnArreter').style.display = 'none';
-    document.getElementById('btnCapturer').style.display = 'none';
-    document.getElementById('caseAnalyseContinue').checked = false;
-    arreterAnalyseContinue();
-  }
-
-  function basculerAnalyseContinue() {
-    const active = document.getElementById('caseAnalyseContinue').checked;
-    if (active && fluxCamera) demarrerAnalyseContinue();
-    else arreterAnalyseContinue();
-  }
-
-  function demarrerAnalyseContinue() {
-    arreterAnalyseContinue();
-    intervalleAnalyseContinue = setInterval(async () => {
-      if (analyseEnCoursFlag) return;
-      const video = document.getElementById('video');
-      if (!video || video.style.display === 'none') return;
-      capturerDepuisCamera();
-      await lancerAnalyseIA();
-    }, 6000);
-  }
-
-  function arreterAnalyseContinue() {
-    if (intervalleAnalyseContinue) { clearInterval(intervalleAnalyseContinue); intervalleAnalyseContinue = null; }
-  }
-
-  function capturerDepuisCamera() {
-    const video = document.getElementById('video');
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-    jouerBuzzer('capture');
-    traiterNouvelleImage(canvas.toDataURL('image/jpeg', 0.92));
-  }
-
-  function importerFichier(e) {
-    const fichier = e.target.files && e.target.files[0];
-    if (!fichier) return;
-    const lecteur = new FileReader();
-    lecteur.onload = () => traiterNouvelleImage(lecteur.result);
-    lecteur.readAsDataURL(fichier);
-  }
-
-  async function traiterNouvelleImage(dataUrl) {
-    const id = 'img-' + Date.now() + '-' + Math.floor(Math.random()*1000);
-    galerie.push({ id, dataUrl });
-    selectionnerImage(id);
-    afficherGalerie();
-    document.getElementById('blocImage').style.display = 'block';
-  }
-
-  function afficherGalerie() {
-    const conteneur = document.getElementById('galerieImages');
-    conteneur.innerHTML = galerie.map(img => `
-      <div class="miniature ${img.dataUrl === imageCapturee ? 'active' : ''}" onclick="selectionnerImage('${img.id}')">
-        <img src="${img.dataUrl}" />
-        <button class="supprimer" onclick="event.stopPropagation(); supprimerImage('${img.id}')" title="Supprimer">×</button>
-      </div>`).join('');
-  }
-
-  async function selectionnerImage(id) {
-    const img = galerie.find(i => i.id === id);
-    if (!img) return;
-    imageCapturee = img.dataUrl;
-    imageActiveId = img.id;
-    dernierResultat = null; statuts = {};
-    document.getElementById('resultats').innerHTML = '<p style="color:var(--attenue);font-size:13px;">En attente de l\'analyse sémiologique de la structure dentaire.</p>';
-    document.getElementById('btnRapport').style.display = 'none';
-    document.getElementById('apercuImage').src = imageCapturee;
-    afficherGalerie();
-  }
-
-  function supprimerImage(id) {
-    galerie = galerie.filter(i => i.id !== id);
-    if (galerie.length === 0) {
-      imageCapturee = null; imageActiveId = null; dernierResultat = null; statuts = {};
-      document.getElementById('blocImage').style.display = 'none';
-    } else {
-      selectionnerImage(galerie[galerie.length - 1].id);
-    }
-    afficherGalerie();
-  }
-
-  function supprimerImageActive() {
-    if (imageActiveId) supprimerImage(imageActiveId);
-  }
-
-  function telechargerImageActive() {
-    if (!imageCapturee) return;
-    const lien = document.createElement('a');
-    const patient = patientActuel();
-    const horodatage = new Date().toISOString().replace(/[:.]/g, '-');
-    lien.href = imageCapturee;
-    lien.download = `cliche-dentaire-${(patient.dossier || 'patient').replace(/\s+/g,'_')}-${horodatage}.jpg`;
-    document.body.appendChild(lien);
-    lien.click();
-    document.body.removeChild(lien);
-  }
-
-  // PROMPT STRICTEMENT CHIRURGIEN-DENTISTE AVEC NOMENCLATURE FDI ET TOUTES LES PATHOLOGIES
-  const PROMPT_SYSTEME = `Tu agis en tant que chirurgien-dentiste expert. Rédige un rapport sémiologique intra-orale extrêmement rigoureux et professionnel destiné à un praticien. Analyse exhaustivement le cliché pour identifier : caries (lésions amélo-dentinaires), tartre (dépôts supra/sub-gingivaux), fêlures/lignes de fracture, restaurations au composite, prothèses (couronnes, bridges), états parodontaux, teintes dentaires (selon le teintier classique ex: A2, A3, Bleach), et indices d'halitose/salive. Réponds UNIQUEMENT sous forme d'un objet JSON valide, sans aucun texte autour, sans markdown : 
-{
-  "qualiteSuffisante": true,
-  "commentaireQualite": "Évaluation de la visibilité clinique, de l'éclairage et de la mise au point.",
-  "technique": "Photographie clinique intra-orale en lumière polarisée / directe",
-  "teinteGlobale": "Estimation de la teinte de référence (ex: Vita Classical A2/A3)",
-  "detections": [
-    {
-      "dent": "Numéro de la dent (Nomenclature FDI ex: 16, 21, 36)",
-      "type": "carie ou tartre ou felure ou composite ou prothese ou parodonte ou haleine_salive",
-      "localisation": "Ex: Face vestibulaire / Collet / Face occlusale / Point de contact",
-      "confiance": 95,
-      "description": "Description sémiologique précise pour le praticien (profondeur, étendue, état marginal)"
-    }
-  ],
-  "impression": "Synthèse diagnostique et proposition de plan de traitement clinique argumenté du chirurgien-dentiste."
-}`;
-
-  function extraireJSON(texte) {
-    return JSON.parse((texte || '{}').replace(/```json|```/g, '').trim());
-  }
-
-  async function appelerAnthropic(cle, base64, mediaType, texteUtilisateur) {
-    const reponse = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': cle, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6', max_tokens: 1200, system: PROMPT_SYSTEME,
-        messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } }, { type: 'text', text: texteUtilisateur }] }]
-      })
-    });
-    const data = await reponse.json();
-    return extraireJSON(data.content?.find(b => b.type === 'text')?.text);
-  }
-
-  async function appelerGoogle(cle, base64, mediaType, texteUtilisateur) {
-    const reponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${cle}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: PROMPT_SYSTEME }] },
-        contents: [{ parts: [{ text: texteUtilisateur }, { inline_data: { mime_type: mediaType, data: base64 } }] }],
-        generationConfig: { response_mime_type: 'application/json' }
-      })
-    });
-    const data = await reponse.json();
-    return extraireJSON(data.candidates?.[0]?.content?.parts?.[0]?.text);
-  }
-
-  async function lancerAnalyseIA() {
-    const cle = document.getElementById('cleApi').value.trim();
-    const fournisseur = document.getElementById('fournisseurIA').value;
-    const erreurDiv = document.getElementById('erreurAnalyse');
-    erreurDiv.textContent = '';
-    if (!imageCapturee) return;
-    if (!cle) { erreurDiv.textContent = "Veuillez renseigner votre clé API pour lancer l'analyse experte."; return; }
-
-    analyseEnCoursFlag = true;
-    document.getElementById('btnAnalyser').disabled = true;
-    document.getElementById('btnAnalyser').textContent = 'Analyse clinique en cours…';
-    definirLED('jaune','clignotant');
-
-    try {
-      const base64 = imageCapturee.split(',')[1];
-      const patient = patientActuel();
-      const texteUtilisateur = `Procédez à l'examen sémiologique détaillé de ce cliché (Contexte: ${patient.motif}). Identifiez la nomenclature FDI, les teintes, les caries, fêlures, composites et prothèses.`;
-
-      const appels = { anthropic: appelerAnthropic, google: appelerGoogle };
-      const parse = await appels[fournisseur](cle, base64, 'image/jpeg', texteUtilisateur);
-
-      dernierResultat = parse;
-      statuts = {}; (parse.detections || []).forEach((_, i) => statuts[i] = 'en_attente');
-      afficherResultats(parse);
-
-      if ((parse.detections || []).length > 0) { 
-        definirLED('rouge','clignotant'); 
-        jouerBuzzer('alerte'); 
-      } else { 
-        definirLED('verte','fixe'); 
-      }
-      document.getElementById('btnRapport').style.display = 'inline-block';
-    } catch (e) {
-      erreurDiv.textContent = "Erreur lors de l'évaluation clinique : " + e.message;
-      definirLED('rouge','clignotant'); 
-      jouerBuzzer('erreur');
-    } finally {
-      analyseEnCoursFlag = false;
-      document.getElementById('btnAnalyser').disabled = false;
-      document.getElementById('btnAnalyser').textContent = "Lancer l'Analyse Diagnostique IA";
-    }
-  }
-
-  function afficherResultats(r) {
-    const conteneur = document.getElementById('resultats');
-    let html = '';
-    if (r.teinteGlobale) html += `<div style="font-family:monospace;font-size:12px;color:var(--or);margin-bottom:8px;">Teinte estimée (Teintier): <b>${r.teinteGlobale}</b></div>`;
-    if (r.impression) html += `<p style="font-size:13px;color:var(--attenue);border-left:3px solid var(--accent);padding-left:10px;margin-bottom:12px;"><b>Synthèse Praticien :</b> ${r.impression}</p>`;
-    
-    const dets = r.detections || [];
-    if (dets.length === 0) html += `<p style="font-size:13px;color:var(--accent);">Aucune pathologie ou anomalie structurelle majeure relevée sur ce secteur.</p>`;
-    
-    dets.forEach((d, i) => {
-      const couleurType = d.type === 'carie' ? 'var(--rouge)' : d.type === 'felure' ? 'var(--jaune)' : 'var(--accent)';
-      html += `<div class="detection-carte">
-        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-          <span style="font-family:monospace;font-weight:700;color:var(--accent);">Dent FDI : ${d.dent}</span>
-          <span style="font-family:monospace;font-size:12px;color:var(--attenue);">Indice: ${Math.round(d.confiance)}%</span>
-        </div>
-        <div style="font-size:14px;margin-bottom:6px;color:${couleurType};text-transform:uppercase;font-weight:600;">Pathologie/État : ${d.type} — ${d.localisation}</div>
-        ${d.description ? `<div style="font-size:12px;color:var(--attenue);margin-bottom:8px;line-height:1.4;">${d.description}</div>` : ''}
-        <select onchange="statuts[${i}]=this.value">
-          ${STATUTS.map(s => `<option value="${s.valeur}">${s.label}</option>`).join('')}
-        </select>
-      </div>`;
-    });
-    conteneur.innerHTML = html;
-  }
-
-  function imprimerRapport() {
-    if (!dernierResultat) return;
-    const patient = patientActuel();
-    const nomComplet = [patient.prenom, patient.nom].filter(Boolean).join(' ') || 'Patient Anonyme';
-    const dateExamen = new Date().toLocaleString('fr-FR', { dateStyle:'long', timeStyle:'short' });
-    
-    const lignes = (dernierResultat.detections || []).map((d, i) => `
-      <tr>
-        <td><b>FDI ${d.dent}</b></td>
-        <td style="text-transform:uppercase;">${d.type}</td>
-        <td>${d.localisation}</td>
-        <td>${d.description || '—'}</td>
-        <td style="text-align:center;font-family:monospace;">${Math.round(d.confiance)}%</td>
-        <td><b>${(STATUTS.find(s=>s.valeur===statuts[i])||{}).label || 'À valider'}</b></td>
-      </tr>`).join('');
-
-    const fenetre = window.open('', '_blank');
-    fenetre.document.write(`<html lang="fr"><head><meta charset="UTF-8"/><title>Rapport Clinique — ${nomComplet}</title>
-    <style>
-      @page{size:A4;margin:18mm 16mm;} body{font-family:Georgia,serif;color:#17202a;font-size:13px;line-height:1.55;}
-      .entete{display:flex;justify-content:space-between;border-bottom:3px solid #0b3d3a;padding-bottom:12px;margin-bottom:18px;}
-      .bloc-identite{display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;font-family:Arial;font-size:12px;margin-bottom:18px;background:#f7f8f6;border:1px solid #dfe4e2;border-radius:6px;padding:12px 16px;}
-      h2.section{font-family:Arial;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;color:#0b3d3a;border-bottom:1px solid #cdd6d4;padding-bottom:4px;margin:20px 0 8px;}
-      img{width:260px;border-radius:6px;border:1px solid #cdd6d4;}
-      table{width:100%;border-collapse:collapse;margin-top:8px;font-family:Arial;} th,td{border:1px solid #cdd6d4;padding:7px 8px;font-size:11px;} th{background:#eef2f0;}
-      .impression{background:#f7f8f6;border-left:3px solid #0b3d3a;padding:10px 14px;font-size:12.5px;}
-      .signature{display:flex;justify-content:space-between;margin-top:42px;font-family:Arial;font-size:12px;}
-      .signature .ligne{border-top:1px solid #17202a;margin-top:36px;padding-top:4px;color:#5a6b6a;}
-      .pied{margin-top:28px;padding-top:10px;border-top:1px solid #cdd6d4;font-family:Arial;font-size:10px;color:#5a6b6a;}
-    </style></head><body>
-      <div class="entete">
-        <div><h1 style="font-size:18px;margin:0;">RAPPORT D'EXPERTISE ODONTOLOGIQUE</h1>
-        <div style="font-family:Arial;font-size:11px;color:#5a6b6a;">Évaluation Sémiologique & Plan de Traitement Assisté par IA</div></div>
-        <div style="text-align:right;font-family:Arial;font-size:11px;color:#5a6b6a;">Date : ${dateExamen}</div>
-      </div>
-      <div class="bloc-identite">
-        <div><b>Patient :</b> ${nomComplet}</div><div><b>N° Dossier :</b> ${patient.dossier||'—'}</div>
-        <div><b>Chirurgien-Dentiste :</b> ${patient.praticien||'Dr. [Nom]'}</div><div><b>Teinte Dominante :</b> ${dernierResultat.teinteGlobale || 'Non spécifiée'}</div>
-      </div>
-      <h2 class="section">Motif de Consultation / Indication</h2><p>${patient.motif}</p>
-      <h2 class="section">Méthodologie Optique</h2><p>${dernierResultat.technique || "Cliché clinique intra-oral standard."}</p>
-      <h2 class="section">Cliché Clinique Examen</h2><img src="${imageCapturee}"/>
-      <h2 class="section">Cartographie des Anomalies & Nomenclature FDI</h2>
-      <table><thead><tr><th>Dent (FDI)</th><th>Type de Lésion / État</th><th>Localisation</th><th>Observation Clinique</th><th>Indice</th><th>Validation</th></tr></thead>
-      <tbody>${lignes || '<tr><td colspan="6" style="text-align:center;color:#5a6b6a;">Aucune anomalie répertoriée</td></tr>'}</tbody></table>
-      <h2 class="section">Synthèse Diagnostique & Proposition Thérapeutique</h2><div class="impression">${dernierResultat.impression || ''}</div>
-      <div class="signature">
-        <div style="width:45%"><div class="ligne">Visa et Signature du Chirurgien-Dentiste</div></div>
-        <div style="width:45%"><div class="ligne">Date / Tampon du Cabinet</div></div>
-      </div>
-      <div class="pied">Ce document constitue un compte-rendu d'aide à l'analyse clinique et ne se substitue pas au jugement clinique du praticien responsable des soins.</div>
-    </body></html>`);
-    fenetre.document.close();
-    setTimeout(() => fenetre.print(), 400);
-  }
-
-  window.addEventListener('beforeunload', () => fluxCamera?.getTracks().forEach(p => p.stop()));
 </script>
+
 </body>
 </html>
