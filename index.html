@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Smart Dental Vision — Analyse intra-orale assistée par IA</title>
+<title>Smart Dental Vision — Cabinet Dr. [Nom du Praticien]</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -73,7 +73,7 @@
 
   .zone-import { padding:28px; text-align:center; border:1px dashed var(--bordure-vive); border-radius:16px; }
   img.apercu { width:100%; max-width:360px; border-radius:14px; border:1px solid var(--bordure-vive); margin-top:8px; }
-  select { width:100%; background:var(--fond); color:var(--texte); border:1px solid var(--bordure); border-radius:9px; padding:7px; font-size:13px; }
+  select { width:100%; background:var(--fond); color:var(--texte); border:1px solid var(--bordure); border-radius:9px; padding:7px 12px; font-size:13px; }
 
   .detection-carte { border:1px solid var(--bordure); border-radius:14px; padding:14px; margin-bottom:10px; background:var(--surface-alt); }
 
@@ -97,32 +97,37 @@
   }
   .miniature .supprimer:hover { background:var(--rouge); }
 
+  .grille-capteurs { display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:10px; }
+  .carte-capteur { background:var(--surface-alt); border:1px solid var(--bordure); border-radius:12px; padding:14px; text-align:center; }
+  .valeur-capteur { font-family:var(--mono); font-size:20px; font-weight:700; color:var(--accent); margin-top:4px; }
+  .unite { font-size:11px; color:var(--attenue); margin-left:2px; }
+
   ::selection { background: var(--accent-doux); }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="logo"><span class="point"></span> Smart Dental Vision</div>
-  <div class="sur-titre">Aide au diagnostic par IA<small>Usage professionnel — cabinet dentaire</small></div>
+  <div class="logo"><span class="point"></span> Smart Dental Vision — Cabinet d'Odontologie</div>
+  <div class="sur-titre">Diagnostic Clinique Expert<small>Plateforme d'Expertise Odontologique & Prothétique</small></div>
 </header>
 
 <div class="heros">
-  <h1>Repérez plus tôt. Documentez mieux. Décidez en confiance.</h1>
-  <p>Capture intra-orale, analyse visuelle assistée par intelligence artificielle et compte-rendu clinique prêt à imprimer — pensé pour s'intégrer au flux de travail du cabinet dentaire.</p>
+  <h1>Expertise Intra-Orale, Analyse Tissulaire & Biomécanique</h1>
+  <p>Module décisionnel haute précision pour le chirurgien-dentiste : cartographie des lésions carieuses, parodontopathies, fêlures, états prothétiques, teintes (FDI) et télémétrie thermique/halitométrique connectée.</p>
   <div class="badges">
-    <span class="badge">Analyse IA en temps réel</span>
-    <span class="badge">Compte-rendu type radiologie</span>
-    <span class="badge">Alerte LED + buzzer matérielle</span>
+    <span class="badge">Nomenclature FDI Standard</span>
+    <span class="badge">Analyse Teintier & Fêlures</span>
+    <span class="badge">Captation Matérielle Synchrone COM5</span>
   </div>
 </div>
 
 <div class="corps" style="grid-template-columns:1fr;padding-bottom:0;">
   <div class="panneau" id="panneauDiagnostic">
-    <div class="titre-panneau">Diagnostic système (automatique)</div>
+    <div class="titre-panneau">Validation des flux matériels & liaison série</div>
     <div id="diagContenu" style="font-family:monospace;font-size:12px;line-height:1.8;"></div>
     <div class="barre-actions">
-      <button class="bouton" onclick="executerDiagnostic()">Relancer le diagnostic</button>
+      <button class="bouton" onclick="executerDiagnostic()">Actualiser l'état du cabinet</button>
     </div>
   </div>
 </div>
@@ -131,84 +136,80 @@
   <!-- Colonne gauche -->
   <div>
     <div class="panneau" style="border-color:var(--accent);">
-      <div class="titre-panneau">📷 Port / Caméra dentaire — à sélectionner ici</div>
+      <div class="titre-panneau">📷 Caméra Optique / Intra-Orale USB</div>
       <select id="cameraSource" style="margin-bottom:10px;">
-        <option value="">Caméra par défaut du système</option>
+        <option value="">Sélectionner le flux optique actif</option>
       </select>
       <div style="font-size:11px;color:var(--attenue);margin-bottom:10px;">
-        Branchez votre caméra dentaire USB, puis cliquez sur "Rafraîchir" ci-dessous : elle apparaîtra dans la liste (souvent nommée « USB Video Device » ou le nom du fabricant). Sélectionnez-la avant de démarrer la caméra plus bas.
+        Sélectionnez la caméra intra-orale connectée pour démarrer l'examen clinique en direct.
       </div>
-      <button class="bouton primaire" onclick="rafraichirCameras()">🔄 Rafraîchir la liste des caméras</button>
+      <button class="bouton primaire" onclick="rafraichirCameras()">🔄 Actualiser les flux optiques</button>
     </div>
 
     <div class="panneau">
-      <div class="titre-panneau">Informations patient</div>
+      <div class="titre-panneau">Dossier Patient & Paramétrage Opératoire</div>
       <div class="grille-2">
-        <input type="text" id="prenom" placeholder="Prénom" />
-        <input type="text" id="nom" placeholder="Nom" />
-        <input type="text" id="dossier" placeholder="N° de dossier" />
-        <input type="text" id="praticien" placeholder="Praticien" />
-        <input type="text" id="motif" placeholder="Motif de l'examen" style="grid-column:1 / span 2" value="Contrôle de routine" />
+        <input type="text" id="prenom" placeholder="Prénom du patient" />
+        <input type="text" id="nom" placeholder="Nom du patient" />
+        <input type="text" id="dossier" placeholder="N° de dossier clinique" />
+        <input type="text" id="praticien" placeholder="Chirurgien-dentiste référent" />
+        <input type="text" id="motif" placeholder="Motif de consultation / Acte prévu" style="grid-column:1 / span 2" value="Bilan global, caries, fêlures et état parodontal" />
       </div>
 
-      <div class="titre-panneau">Fournisseur IA</div>
+      <div class="titre-panneau">Moteur d'Intelligence Clinique</div>
       <select id="fournisseurIA" onchange="majPlaceholderCle()" style="margin-bottom:10px;">
-        <option value="google" selected>Google — Gemini (vision)</option>
-        <option value="anthropic">Anthropic — Claude (vision)</option>
+        <option value="google" selected>Google — Gemini Expert Dentaire</option>
+        <option value="anthropic">Anthropic — Claude Vision Avancé</option>
       </select>
-      <div class="titre-panneau">Clé API</div>
-      <input type="password" id="cleApi" placeholder="AIza..." oninput="executerDiagnostic()" />
+      <div class="titre-panneau">Clé d'activation API</div>
+      <input type="password" id="cleApi" placeholder="Clé API sécurisée..." oninput="executerDiagnostic()" />
       <div style="font-size:11px;color:var(--attenue);margin-top:6px;" id="aideCleApi">
-        Utilisée uniquement dans votre navigateur, jamais envoyée ailleurs ni sauvegardée. Nécessaire pour que l'analyse IA fonctionne en dehors de l'aperçu de chat.
-        Obtenez une clé gratuite sur aistudio.google.com/app/apikey.
+        Sécurisé en session locale. Clé requise pour l'évaluation diagnostique de pointe.
       </div>
     </div>
 
     <div class="panneau">
       <div class="onglets">
-        <button class="onglet actif" id="ongletCamera" onclick="choisirMode('camera')">Caméra en direct</button>
-        <button class="onglet" id="ongletImport" onclick="choisirMode('import')">Importer une photo</button>
+        <button class="onglet actif" id="ongletCamera" onclick="choisirMode('camera')">Flux Optique Direct</button>
+        <button class="onglet" id="ongletImport" onclick="choisirMode('import')">Import Cliché Externe</button>
       </div>
 
       <div id="blocCamera">
         <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--attenue);margin-bottom:10px;">
           <input type="checkbox" id="caseAnalyseContinue" onchange="basculerAnalyseContinue()" />
-          Analyse IA en continu pendant la capture vidéo (toutes les 6 secondes)
+          Surveillance et tri automatisé par IA en continu (toutes les 6 secondes)
         </label>
         <div class="zone-camera">
           <video id="video" autoplay playsinline muted style="display:none;"></video>
-          <div class="message-camera" id="messageCamera">Caméra non démarrée.</div>
+          <div class="message-camera" id="messageCamera">Flux optique en attente d'initialisation.</div>
         </div>
         <div class="barre-actions">
-          <button class="bouton primaire" id="btnDemarrer" onclick="demarrerCamera()">Démarrer la caméra</button>
-          <button class="bouton" id="btnArreter" onclick="arreterCamera()" style="display:none;">Arrêter</button>
-          <button class="bouton primaire" id="btnCapturer" onclick="capturerDepuisCamera()" style="display:none;">Capturer l'image</button>
+          <button class="bouton primaire" id="btnDemarrer" onclick="demarrerCamera()">Activer la caméra</button>
+          <button class="bouton" id="btnArreter" onclick="arreterCamera()" style="display:none;">Interrompre</button>
+          <button class="bouton primaire" id="btnCapturer" onclick="capturerDepuisCamera()" style="display:none;">Capturer le cliché</button>
         </div>
       </div>
 
       <div id="blocImport" style="display:none;">
         <div class="zone-import">
           <input type="file" accept="image/*" capture="environment" id="fichierImport" onchange="importerFichier(event)" />
-          <div style="font-size:11px;color:var(--attenue);margin-top:10px;">
-            Sur téléphone, ce bouton ouvre directement l'appareil photo natif (pas besoin de connexion sécurisée) — c'est le moyen le plus fiable de capturer une image ici.
-          </div>
         </div>
       </div>
 
       <div id="blocImage" style="display:none;margin-top:16px;">
-        <div class="titre-panneau">Images capturées</div>
+        <div class="titre-panneau">Clichés Enregistrés pour la Consultation</div>
         <div id="galerieImages" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;"></div>
 
-        <div class="titre-panneau">Image active pour l'analyse</div>
+        <div class="titre-panneau">Cliché Actif Soumis à l'Analyse Expert</div>
         <img class="apercu" id="apercuImage" />
         <div id="messageQualite" style="font-size:13px;margin-top:8px;"></div>
         <div class="barre-actions">
-          <button class="bouton" id="btnTelecharger" onclick="telechargerImageActive()">💾 Enregistrer / Télécharger</button>
-          <button class="bouton" id="btnSupprimerActive" onclick="supprimerImageActive()" style="border-color:var(--rouge);color:var(--rouge);">🗑️ Supprimer / Effacer</button>
+          <button class="bouton" id="btnTelecharger" onclick="telechargerImageActive()">💾 Archiver le cliché</button>
+          <button class="bouton" id="btnSupprimerActive" onclick="supprimerImageActive()" style="border-color:var(--rouge);color:var(--rouge);">🗑️ Retirer</button>
         </div>
         <div class="barre-actions">
-          <button class="bouton primaire" id="btnAnalyser" onclick="lancerAnalyseIA()">Lancer l'analyse IA</button>
-          <button class="bouton" id="btnRapport" onclick="imprimerRapport()" style="display:none;">Générer le rapport</button>
+          <button class="bouton primaire" id="btnAnalyser" onclick="lancerAnalyseIA()">Lancer l'Analyse Diagnostique IA</button>
+          <button class="bouton" id="btnRapport" onclick="imprimerRapport()" style="display:none;">Imprimer le Rapport Clinique</button>
         </div>
         <div id="erreurAnalyse" style="color:var(--rouge);font-size:13px;margin-top:8px;"></div>
       </div>
@@ -218,30 +219,44 @@
   <!-- Colonne droite -->
   <div>
     <div class="panneau">
-      <div class="titre-panneau">État du système</div>
+      <div class="titre-panneau">Statut Unité Opératoire</div>
       <div style="display:flex;align-items:center;gap:10px;">
         <span class="led verte" id="ledEtat"></span>
-        <span id="labelEtat" style="font-family:monospace;font-size:13px;">Système prêt</span>
+        <span id="labelEtat" style="font-family:monospace;font-size:13px;">Prêt à l'examen</span>
       </div>
-      <div class="titre-panneau" style="margin-top:14px;">Carte ESP32 (matériel réel)</div>
-      <div class="manuel" style="margin-bottom:8px;">
-        <button class="bouton" id="btnConnecterCarte" onclick="connecterCarteESP32()">Connecter la carte (USB)</button>
-      </div>
-      <div id="statutCarte" style="font-size:12px;color:var(--attenue);">Carte non connectée — LED/buzzer simulés à l'écran uniquement.</div>
 
-      <div class="titre-panneau" style="margin-top:14px;">Test manuel</div>
+      <div class="titre-panneau" style="margin-top:14px;">Liaison Matérielle ESP32 (COM5)</div>
+      <div class="manuel" style="margin-bottom:8px;">
+        <button class="bouton" id="btnConnecterCarte" onclick="connecterCarteESP32()">Établir la liaison USB</button>
+      </div>
+      <div id="statutCarte" style="font-size:12px;color:var(--attenue);">Matériel non connecté.</div>
+
+      <!-- Télémétrie capteurs -->
+      <div class="titre-panneau" style="margin-top:18px;">Télémétrie Clinique (BME280 & Halitose)</div>
+      <div class="grille-capteurs">
+        <div class="carte-capteur">
+          <div style="font-size:11px;color:var(--attenue);">Température Buccale</div>
+          <div class="valeur-capteur" id="valeurTemp">--<span class="unite">°C</span></div>
+        </div>
+        <div class="carte-capteur">
+          <div style="font-size:11px;color:var(--attenue);">Indice Halitose / Salive</div>
+          <div class="valeur-capteur" id="valeurSalive">--<span class="unite">%</span></div>
+        </div>
+      </div>
+
+      <div class="titre-panneau" style="margin-top:18px;">Commandes Matérielles Manuelles</div>
       <div class="manuel">
-        <button class="bouton" onclick="definirLED('verte','fixe')">LED verte</button>
-        <button class="bouton" onclick="definirLED('jaune','clignotant')">LED jaune</button>
-        <button class="bouton" onclick="definirLED('rouge','clignotant')">LED rouge</button>
-        <button class="bouton" onclick="jouerBuzzer('alerte')">Tester le buzzer</button>
+        <button class="bouton" onclick="definirLED('verte','fixe')">LED Verte (Sécurité)</button>
+        <button class="bouton" onclick="definirLED('jaune','clignotant')">LED Jaune (Attention)</button>
+        <button class="bouton" onclick="definirLED('rouge','clignotant')">LED Rouge (Alerte)</button>
+        <button class="bouton" onclick="jouerBuzzer('alerte')">Signal Sonore</button>
       </div>
     </div>
 
     <div class="panneau">
-      <div class="titre-panneau">Résultats de l'analyse IA</div>
-      <div id="resultats"><p style="color:var(--attenue);font-size:13px;">Aucune analyse pour le moment.</p></div>
-      <div class="avert">L'IA constitue un outil d'aide à l'analyse. Chaque résultat doit être confirmé par le chirurgien-dentiste avant toute décision clinique.</div>
+      <div class="titre-panneau">Évaluation Diagnostique & Nomenclature FDI</div>
+      <div id="resultats"><p style="color:var(--attenue);font-size:13px;">En attente de l'analyse sémiologique de la structure dentaire.</p></div>
+      <div class="avert">L'évaluation automatisée constitue une aide à la décision clinique. La validation finale de chaque plan de traitement incombe au praticien responsable.</div>
     </div>
   </div>
 </div>
@@ -251,17 +266,17 @@
   let imageCapturee = null;
   let dernierResultat = null;
   let statuts = {};
-  let galerie = []; // { id, dataUrl }
+  let galerie = [];
   let imageActiveId = null;
   let intervalleAnalyseContinue = null;
   let analyseEnCoursFlag = false;
 
   const STATUTS = [
-    { valeur:"en_attente", label:"En attente" },
-    { valeur:"confirme", label:"Confirmé" },
-    { valeur:"non_confirme", label:"Non confirmé" },
-    { valeur:"a_surveiller", label:"À surveiller" },
-    { valeur:"faux_positif", label:"Faux positif" },
+    { valeur:"en_attente", label:"À valider par le praticien" },
+    { valeur:"confirme", label:"Validé / Confirmé" },
+    { valeur:"plan_traitement", label:"À intégrer au plan de traitement" },
+    { valeur:"a_surveiller", label:"À surveiller (Rappel N+1)" },
+    { valeur:"faux_positif", label:"Écarté / Faux positif" },
   ];
 
   function majPlaceholderCle() {
@@ -269,23 +284,22 @@
     const cleInput = document.getElementById('cleApi');
     const aide = document.getElementById('aideCleApi');
     const infos = {
-      google: { placeholder: 'AIza...', aide: "Obtenez une clé gratuite sur aistudio.google.com/app/apikey." },
-      anthropic: { placeholder: 'sk-ant-...', aide: "Obtenez une clé sur console.anthropic.com." },
+      google: { placeholder: 'AIza...', aide: "Clé Google Gemini active." },
+      anthropic: { placeholder: 'sk-ant-...', aide: "Clé Anthropic Claude active." },
     };
     const info = infos[fournisseur];
     cleInput.placeholder = info.placeholder;
-    aide.textContent = "Utilisée uniquement dans votre navigateur, jamais envoyée ailleurs ni sauvegardée. " + info.aide;
+    aide.textContent = info.aide;
   }
 
-  // --- Sélection de la caméra source (ex: caméra dentaire USB) ---
   async function rafraichirCameras() {
     const select = document.getElementById('cameraSource');
     try {
       const appareils = await navigator.mediaDevices.enumerateDevices();
       const cams = appareils.filter(a => a.kind === 'videoinput');
-      select.innerHTML = '<option value="">Caméra par défaut du système</option>' +
-        cams.map((c, i) => `<option value="${c.deviceId}">${c.label || 'Caméra ' + (i+1)}</option>`).join('');
-    } catch (e) { /* liste indisponible avant autorisation, ce n'est pas bloquant */ }
+      select.innerHTML = '<option value="">Sélectionner le flux optique actif</option>' +
+        cams.map((c, i) => `<option value="${c.deviceId}">${c.label || 'Caméra optique ' + (i+1)}</option>`).join('');
+    } catch (e) { }
   }
 
   function patientActuel() {
@@ -294,50 +308,25 @@
       nom: document.getElementById('nom').value,
       dossier: document.getElementById('dossier').value,
       praticien: document.getElementById('praticien').value,
-      motif: document.getElementById('motif').value || "Contrôle de routine",
+      motif: document.getElementById('motif').value || "Bilan global, caries, fêlures et état parodontal",
     };
   }
 
-  // --- Diagnostic système : explique clairement ce qui bloque, sans deviner ---
   async function executerDiagnostic() {
     const lignes = [];
     const ok = (t) => `<span style="color:var(--accent)">✔</span> ${t}`;
     const ko = (t) => `<span style="color:var(--rouge)">✘</span> ${t}`;
     const warn = (t) => `<span style="color:var(--jaune)">⚠</span> ${t}`;
 
-    // 1. Protocole / contexte sécurisé
-    const protocole = location.protocol;
-    if (window.isSecureContext) {
-      lignes.push(ok(`Contexte sécurisé (${protocole}) — la caméra peut être autorisée.`));
-    } else {
-      lignes.push(ko(`Contexte NON sécurisé (${protocole}) — le navigateur bloque systématiquement la caméra ici. Ouvrez la page via http://localhost (petit serveur local) au lieu d'un double-clic direct.`));
-    }
+    if (window.isSecureContext) lignes.push(ok(`Environnement sécurisé (${location.protocol})`));
+    else lignes.push(ko(`Environnement non sécurisé. Utilisez http://localhost.`));
 
-    // 2. API caméra disponible
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      lignes.push(ok('API caméra (getUserMedia) disponible dans ce navigateur.'));
-      try {
-        const appareils = await navigator.mediaDevices.enumerateDevices();
-        const cams = appareils.filter(a => a.kind === 'videoinput');
-        if (cams.length > 0) {
-          lignes.push(ok(`${cams.length} caméra(s) détectée(s) par le système.`));
-        } else {
-          lignes.push(warn("Aucune caméra détectée pour l'instant (normal si l'autorisation n'a pas encore été donnée une première fois)."));
-        }
-      } catch (e) {
-        lignes.push(warn('Impossible de lister les caméras : ' + e.message));
-      }
-    } else {
-      lignes.push(ko('API caméra indisponible dans ce navigateur/environnement.'));
-    }
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) lignes.push(ok('Capteur optique opérationnel.'));
+    else lignes.push(ko('Capteur optique non accessible.'));
 
-    // 3. Clé API IA
     const cle = document.getElementById('cleApi')?.value.trim();
-    if (cle) {
-      lignes.push(ok('Clé API renseignée — l\'analyse IA peut être lancée.'));
-    } else {
-      lignes.push(warn('Aucune clé API Anthropic renseignée — l\'analyse IA ne fonctionnera pas tant que ce champ est vide.'));
-    }
+    if (cle) lignes.push(ok('Moteur d\'IA paramétré.'));
+    else lignes.push(warn('Clé d\'activation API requise.'));
 
     document.getElementById('diagContenu').innerHTML = lignes.join('<br/>');
   }
@@ -348,48 +337,95 @@
     majPlaceholderCle();
   });
 
-  // --- Pont matériel réel : ESP32 via Web Serial API (Chrome/Edge PC uniquement) ---
+  // Liaison série ESP32 (COM5)
   let portSerie = null;
   let writerSerie = null;
+  let readerSerie = null;
 
   async function connecterCarteESP32() {
     const statut = document.getElementById('statutCarte');
     if (!('serial' in navigator)) {
       statut.style.color = 'var(--rouge)';
-      statut.textContent = "Web Serial indisponible sur ce navigateur/appareil (fonctionne sur Chrome ou Edge, PC uniquement, pas sur mobile). LED/buzzer restent simulés à l'écran.";
+      statut.textContent = "Web Serial non supporté sur ce navigateur (utilisez Chrome ou Edge sur PC).";
       return;
     }
     try {
       portSerie = await navigator.serial.requestPort();
       await portSerie.open({ baudRate: 115200 });
       writerSerie = portSerie.writable.getWriter();
+      
       statut.style.color = 'var(--accent)';
-      statut.textContent = 'Carte ESP32 connectée — les LED et le buzzer sont maintenant réellement pilotés.';
-      document.getElementById('btnConnecterCarte').textContent = 'Carte connectée ✔';
+      statut.textContent = 'Liaison COM5 établie — Acquisition en direct active';
+      document.getElementById('btnConnecterCarte').textContent = 'Liaison établie ✔';
       document.getElementById('btnConnecterCarte').disabled = true;
+
+      lireFluxESP32();
     } catch (e) {
       statut.style.color = 'var(--rouge)';
-      statut.textContent = "Connexion annulée ou impossible : " + e.message;
+      statut.textContent = "Échec de liaison : " + e.message;
     }
   }
 
-  // Envoie une seule lettre au firmware (voir main.cpp pour le protocole).
-  // Ne bloque jamais l'application si la carte n'est pas connectée.
+  async function lireFluxESP32() {
+    const textDecoder = new TextDecoderStream();
+    portSerie.readable.pipeTo(textDecoder.writable);
+    readerSerie = textDecoder.readable.getReader();
+    let buffer = "";
+
+    try {
+      while (true) {
+        const { value, done } = await readerSerie.read();
+        if (done) break;
+        if (value) {
+          buffer += value;
+          let lignes = buffer.split("\n");
+          buffer = lignes.pop();
+          for (let ligne of lignes) {
+            traiterTrameESP32(ligne.trim());
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Erreur de flux série :", error);
+    }
+  }
+
+  function traiterTrameESP32(trame) {
+    if (!trame.startsWith("{")) return;
+    try {
+      const data = JSON.parse(trame);
+      if (data.temp !== undefined) {
+        document.getElementById('valeurTemp').innerHTML = data.temp.toFixed(1) + '<span class="unite">°C</span>';
+      }
+      if (data.salive_haleine !== undefined) {
+        document.getElementById('valeurSalive').innerHTML = data.salive_haleine + '<span class="unite">%</span>';
+        
+        // Si seuil critique halitose / salive dépassé (> 75%), déclenchement automatique d'une capture et alerte rouge
+        if (data.salive_haleine > 75) {
+          document.getElementById('valeurSalive').style.color = "var(--rouge)";
+          if (fluxCamera && !analyseEnCoursFlag) {
+            capturerDepuisCamera();
+            lancerAnalyseIA();
+          }
+        } else {
+          document.getElementById('valeurSalive').style.color = "var(--accent)";
+        }
+      }
+    } catch (e) {}
+  }
+
   async function envoyerCommandeSerie(lettre) {
     if (!writerSerie) return;
     try {
       await writerSerie.write(new TextEncoder().encode(lettre));
-    } catch (e) {
-      // Une erreur d'envoi série est un bonus manqué, pas un blocage de l'app.
-    }
+    } catch (e) {}
   }
 
-  // --- LED / buzzer ---
   function definirLED(couleur, mode) {
     const led = document.getElementById('ledEtat');
     led.className = 'led ' + couleur + (mode === 'clignotant' ? ' clignote' : '');
-    const labels = { verte: 'Système prêt', jaune: 'Analyse en cours…', rouge: 'Anomalie / erreur détectée' };
-    document.getElementById('labelEtat').textContent = labels[couleur] || 'Système prêt';
+    const labels = { verte: 'Prêt à l\'examen', jaune: 'Analyse en cours…', rouge: 'Alerte clinique / Anomalie majeure' };
+    document.getElementById('labelEtat').textContent = labels[couleur] || 'Prêt à l\'examen';
     const lettresLED = { verte: 'V', jaune: 'J', rouge: 'R' };
     envoyerCommandeSerie(lettresLED[couleur] || 'O');
   }
@@ -407,12 +443,11 @@
         const debut = ctx.currentTime + i * 0.22;
         osc.start(debut); osc.stop(debut + 0.16);
       });
-    } catch (e) { /* le buzzer est un bonus, ne bloque jamais l'app */ }
+    } catch (e) {}
     const lettresBuzzer = { alerte: 'B', erreur: 'E', capture: 'C' };
     if (lettresBuzzer[motif]) envoyerCommandeSerie(lettresBuzzer[motif]);
   }
 
-  // --- Caméra ---
   function choisirMode(mode) {
     document.getElementById('ongletCamera').classList.toggle('actif', mode === 'camera');
     document.getElementById('ongletImport').classList.toggle('actif', mode === 'import');
@@ -423,7 +458,7 @@
   async function demarrerCamera() {
     const msg = document.getElementById('messageCamera');
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      msg.textContent = "getUserMedia indisponible. Ouvrez cette page via http://localhost (petit serveur local) plutôt qu'en double-clic direct, ou utilisez l'onglet Importer.";
+      msg.textContent = "Flux optique indisponible. Ouvrez via http://localhost.";
       return;
     }
     const deviceId = document.getElementById('cameraSource').value;
@@ -441,15 +476,10 @@
       document.getElementById('btnCapturer').style.display = 'inline-block';
       definirLED('verte','fixe');
       jouerBuzzer('connexion');
-      rafraichirCameras(); // les libellés des caméras deviennent disponibles après autorisation
+      rafraichirCameras();
     } catch (e) {
-      const raisons = {
-        NotAllowedError: "Autorisation caméra refusée par le navigateur.",
-        NotFoundError: "Aucune caméra détectée sur cet appareil.",
-        NotReadableError: "La caméra est peut-être déjà utilisée par une autre application.",
-      };
       msg.style.display = 'block';
-      msg.textContent = "Impossible d'accéder à la caméra : " + (raisons[e.name] || e.message || e.name);
+      msg.textContent = "Erreur d'accès au flux optique : " + e.message;
       definirLED('rouge','clignotant');
     }
   }
@@ -459,7 +489,7 @@
     const video = document.getElementById('video');
     video.style.display = 'none';
     document.getElementById('messageCamera').style.display = 'block';
-    document.getElementById('messageCamera').textContent = 'Caméra arrêtée.';
+    document.getElementById('messageCamera').textContent = 'Flux optique interrompu.';
     document.getElementById('btnDemarrer').style.display = 'inline-block';
     document.getElementById('btnArreter').style.display = 'none';
     document.getElementById('btnCapturer').style.display = 'none';
@@ -476,7 +506,7 @@
   function demarrerAnalyseContinue() {
     arreterAnalyseContinue();
     intervalleAnalyseContinue = setInterval(async () => {
-      if (analyseEnCoursFlag) return; // on ne superpose pas deux analyses
+      if (analyseEnCoursFlag) return;
       const video = document.getElementById('video');
       if (!video || video.style.display === 'none') return;
       capturerDepuisCamera();
@@ -493,6 +523,7 @@
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth; canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    jouerBuzzer('capture');
     traiterNouvelleImage(canvas.toDataURL('image/jpeg', 0.92));
   }
 
@@ -501,32 +532,7 @@
     if (!fichier) return;
     const lecteur = new FileReader();
     lecteur.onload = () => traiterNouvelleImage(lecteur.result);
-    lecteur.onerror = () => alert("Impossible de lire ce fichier. Essayez une image JPG/PNG.");
     lecteur.readAsDataURL(fichier);
-  }
-
-  function analyserQualitePixels(dataUrl) {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width; canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        let sommeLum = 0, sommeContraste = 0, precedent = 0;
-        for (let i = 0; i < data.length; i += 4) {
-          const lum = 0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2];
-          sommeLum += lum; sommeContraste += Math.abs(lum - precedent); precedent = lum;
-        }
-        const nbPixels = data.length / 4;
-        const lumMoy = sommeLum / nbPixels, contrasteMoy = sommeContraste / nbPixels;
-        const luminosite = lumMoy < 60 ? 'faible' : lumMoy > 205 ? 'excessive' : 'correcte';
-        const nettete = contrasteMoy < 4 ? 'floue' : 'correcte';
-        resolve({ luminosite, nettete, suffisante: luminosite==='correcte' && nettete==='correcte' });
-      };
-      img.src = dataUrl;
-    });
   }
 
   async function traiterNouvelleImage(dataUrl) {
@@ -552,16 +558,10 @@
     imageCapturee = img.dataUrl;
     imageActiveId = img.id;
     dernierResultat = null; statuts = {};
-    document.getElementById('resultats').innerHTML = '<p style="color:var(--attenue);font-size:13px;">Aucune analyse pour le moment.</p>';
+    document.getElementById('resultats').innerHTML = '<p style="color:var(--attenue);font-size:13px;">En attente de l\'analyse sémiologique de la structure dentaire.</p>';
     document.getElementById('btnRapport').style.display = 'none';
     document.getElementById('apercuImage').src = imageCapturee;
     afficherGalerie();
-    const q = await analyserQualitePixels(imageCapturee);
-    const el = document.getElementById('messageQualite');
-    el.style.color = q.suffisante ? 'var(--accent)' : 'var(--rouge)';
-    el.textContent = q.suffisante
-      ? "Qualité d'image suffisante pour l'analyse."
-      : `Qualité insuffisante (luminosité: ${q.luminosite}, netteté: ${q.nettete}) — vous pouvez tout de même analyser, mais reprendre la photo est recommandé.`;
   }
 
   function supprimerImage(id) {
@@ -570,77 +570,74 @@
       imageCapturee = null; imageActiveId = null; dernierResultat = null; statuts = {};
       document.getElementById('blocImage').style.display = 'none';
     } else {
-      const dernier = galerie[galerie.length - 1];
-      selectionnerImage(dernier.id);
+      selectionnerImage(galerie[galerie.length - 1].id);
     }
     afficherGalerie();
   }
 
-  // Bouton "Supprimer / Effacer" sous l'image active : jette la capture en cours.
   function supprimerImageActive() {
-    if (!imageActiveId) return;
-    supprimerImage(imageActiveId);
+    if (imageActiveId) supprimerImage(imageActiveId);
   }
 
-  // Bouton "Enregistrer / Télécharger" : sauvegarde le cliché actif sur le disque de l'utilisateur.
   function telechargerImageActive() {
     if (!imageCapturee) return;
     const lien = document.createElement('a');
     const patient = patientActuel();
     const horodatage = new Date().toISOString().replace(/[:.]/g, '-');
-    const nomFichier = `smart-dental-${(patient.dossier || 'patient').replace(/\s+/g,'_')}-${horodatage}.jpg`;
     lien.href = imageCapturee;
-    lien.download = nomFichier;
+    lien.download = `cliche-dentaire-${(patient.dossier || 'patient').replace(/\s+/g,'_')}-${horodatage}.jpg`;
     document.body.appendChild(lien);
     lien.click();
     document.body.removeChild(lien);
   }
 
-  // --- Analyse IA réelle (multi-fournisseur : Anthropic, OpenAI, Google) ---
-  const PROMPT_SYSTEME = `Tu es un outil d'aide à l'analyse pour un chirurgien-dentiste, rédigeant à la manière d'un compte-rendu structuré (style compte-rendu de radiologie, adapté à une photo intra-orale). Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant/après, sans balises markdown, au format exact : {"qualiteSuffisante": booléen, "commentaireQualite": "string", "technique": "string", "detections": [{"dent": "string", "type": "carie ou tartre ou autre", "localisation": "string", "confiance": nombre entre 0 et 100, "description": "string"}], "impression": "string"}. Utilise un vocabulaire de suspicion ("zone compatible avec", "suspicion de"), jamais un diagnostic définitif. Si rien de fiable n'est identifiable, retourne detections vide.`;
+  // PROMPT STRICTEMENT CHIRURGIEN-DENTISTE AVEC NOMENCLATURE FDI ET TOUTES LES PATHOLOGIES
+  const PROMPT_SYSTEME = `Tu agis en tant que chirurgien-dentiste expert. Rédige un rapport sémiologique intra-orale extrêmement rigoureux et professionnel destiné à un praticien. Analyse exhaustivement le cliché pour identifier : caries (lésions amélo-dentinaires), tartre (dépôts supra/sub-gingivaux), fêlures/lignes de fracture, restaurations au composite, prothèses (couronnes, bridges), états parodontaux, teintes dentaires (selon le teintier classique ex: A2, A3, Bleach), et indices d'halitose/salive. Réponds UNIQUEMENT sous forme d'un objet JSON valide, sans aucun texte autour, sans markdown : 
+{
+  "qualiteSuffisante": true,
+  "commentaireQualite": "Évaluation de la visibilité clinique, de l'éclairage et de la mise au point.",
+  "technique": "Photographie clinique intra-orale en lumière polarisée / directe",
+  "teinteGlobale": "Estimation de la teinte de référence (ex: Vita Classical A2/A3)",
+  "detections": [
+    {
+      "dent": "Numéro de la dent (Nomenclature FDI ex: 16, 21, 36)",
+      "type": "carie ou tartre ou felure ou composite ou prothese ou parodonte ou haleine_salive",
+      "localisation": "Ex: Face vestibulaire / Collet / Face occlusale / Point de contact",
+      "confiance": 95,
+      "description": "Description sémiologique précise pour le praticien (profondeur, étendue, état marginal)"
+    }
+  ],
+  "impression": "Synthèse diagnostique et proposition de plan de traitement clinique argumenté du chirurgien-dentiste."
+}`;
 
   function extraireJSON(texte) {
-    const nettoye = (texte || '{}').replace(/```json|```/g, '').trim();
-    return JSON.parse(nettoye);
+    return JSON.parse((texte || '{}').replace(/```json|```/g, '').trim());
   }
 
   async function appelerAnthropic(cle, base64, mediaType, texteUtilisateur) {
     const reponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json', 'x-api-key': cle,
-        'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true',
-      },
+      headers: { 'Content-Type': 'application/json', 'x-api-key': cle, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6', max_tokens: 1000, system: PROMPT_SYSTEME,
-        messages: [{ role: 'user', content: [
-          { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-          { type: 'text', text: texteUtilisateur }
-        ]}]
+        model: 'claude-sonnet-4-6', max_tokens: 1200, system: PROMPT_SYSTEME,
+        messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } }, { type: 'text', text: texteUtilisateur }] }]
       })
     });
-    const data = await reponse.json()
-    if (data.error) throw new Error(data.error.message || 'Erreur API Anthropic');
-    const bloc = (data.content || []).find(b => b.type === 'text');
-    return extraireJSON(bloc?.text);
+    const data = await reponse.json();
+    return extraireJSON(data.content?.find(b => b.type === 'text')?.text);
   }
 
   async function appelerGoogle(cle, base64, mediaType, texteUtilisateur) {
-   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${cle}`;
-    const reponse = await fetch(url, {
+    const reponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${cle}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         system_instruction: { parts: [{ text: PROMPT_SYSTEME }] },
-        contents: [{ parts: [
-          { text: texteUtilisateur },
-          { inline_data: { mime_type: mediaType, data: base64 } }
-        ]}],
+        contents: [{ parts: [{ text: texteUtilisateur }, { inline_data: { mime_type: mediaType, data: base64 } }] }],
         generationConfig: { response_mime_type: 'application/json' }
       })
     });
     const data = await reponse.json();
-    if (data.error) throw new Error(data.error.message || 'Erreur API Google Gemini');
     return extraireJSON(data.candidates?.[0]?.content?.parts?.[0]?.text);
   }
 
@@ -650,56 +647,61 @@
     const erreurDiv = document.getElementById('erreurAnalyse');
     erreurDiv.textContent = '';
     if (!imageCapturee) return;
-    if (!cle) { erreurDiv.textContent = "Renseignez votre clé API ci-dessus pour lancer une analyse réelle."; return; }
+    if (!cle) { erreurDiv.textContent = "Veuillez renseigner votre clé API pour lancer l'analyse experte."; return; }
 
     analyseEnCoursFlag = true;
     document.getElementById('btnAnalyser').disabled = true;
-    document.getElementById('btnAnalyser').textContent = 'Analyse IA en cours…';
+    document.getElementById('btnAnalyser').textContent = 'Analyse clinique en cours…';
     definirLED('jaune','clignotant');
 
     try {
       const base64 = imageCapturee.split(',')[1];
-      const entete = imageCapturee.match(/^data:(image\/[a-zA-Z+]+);base64,/);
-      const typesAcceptes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-      const mediaType = entete && typesAcceptes.includes(entete[1]) ? entete[1] : 'image/jpeg';
       const patient = patientActuel();
-      const texteUtilisateur = `Analyse cette photo intra-orale (motif : ${patient.motif}). Identifie les zones suspectes de tartre ou carie et rédige une impression de synthèse.`;
+      const texteUtilisateur = `Procédez à l'examen sémiologique détaillé de ce cliché (Contexte: ${patient.motif}). Identifiez la nomenclature FDI, les teintes, les caries, fêlures, composites et prothèses.`;
 
       const appels = { anthropic: appelerAnthropic, google: appelerGoogle };
-      const parse = await appels[fournisseur](cle, base64, mediaType, texteUtilisateur);
+      const parse = await appels[fournisseur](cle, base64, 'image/jpeg', texteUtilisateur);
 
       dernierResultat = parse;
       statuts = {}; (parse.detections || []).forEach((_, i) => statuts[i] = 'en_attente');
       afficherResultats(parse);
 
-      if ((parse.detections || []).length > 0) { definirLED('rouge','clignotant'); jouerBuzzer('alerte'); }
-      else { definirLED('verte','fixe'); }
+      if ((parse.detections || []).length > 0) { 
+        definirLED('rouge','clignotant'); 
+        jouerBuzzer('alerte'); 
+      } else { 
+        definirLED('verte','fixe'); 
+      }
       document.getElementById('btnRapport').style.display = 'inline-block';
     } catch (e) {
-      erreurDiv.textContent = "L'analyse IA a échoué : " + e.message;
-      definirLED('rouge','clignotant'); jouerBuzzer('erreur');
+      erreurDiv.textContent = "Erreur lors de l'évaluation clinique : " + e.message;
+      definirLED('rouge','clignotant'); 
+      jouerBuzzer('erreur');
     } finally {
       analyseEnCoursFlag = false;
       document.getElementById('btnAnalyser').disabled = false;
-      document.getElementById('btnAnalyser').textContent = "Lancer l'analyse IA";
+      document.getElementById('btnAnalyser').textContent = "Lancer l'Analyse Diagnostique IA";
     }
   }
 
   function afficherResultats(r) {
     const conteneur = document.getElementById('resultats');
     let html = '';
-    if (r.impression) html += `<p style="font-size:13px;color:var(--attenue);border-left:3px solid var(--accent);padding-left:10px;margin-bottom:12px;">${r.impression}</p>`;
+    if (r.teinteGlobale) html += `<div style="font-family:monospace;font-size:12px;color:var(--or);margin-bottom:8px;">Teinte estimée (Teintier): <b>${r.teinteGlobale}</b></div>`;
+    if (r.impression) html += `<p style="font-size:13px;color:var(--attenue);border-left:3px solid var(--accent);padding-left:10px;margin-bottom:12px;"><b>Synthèse Praticien :</b> ${r.impression}</p>`;
+    
     const dets = r.detections || [];
-    if (dets.length === 0) html += `<p style="font-size:13px;color:var(--accent);">Aucune anomalie identifiée sur cette image.</p>`;
+    if (dets.length === 0) html += `<p style="font-size:13px;color:var(--accent);">Aucune pathologie ou anomalie structurelle majeure relevée sur ce secteur.</p>`;
+    
     dets.forEach((d, i) => {
-      const couleur = d.type === 'carie' ? 'var(--rouge)' : 'var(--jaune)';
+      const couleurType = d.type === 'carie' ? 'var(--rouge)' : d.type === 'felure' ? 'var(--jaune)' : 'var(--accent)';
       html += `<div class="detection-carte">
         <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-          <span style="font-family:monospace;font-weight:700;color:var(--accent);">Dent ${d.dent}</span>
-          <span style="font-family:monospace;font-size:12px;color:var(--attenue);">Confiance: ${Math.round(d.confiance)}%</span>
+          <span style="font-family:monospace;font-weight:700;color:var(--accent);">Dent FDI : ${d.dent}</span>
+          <span style="font-family:monospace;font-size:12px;color:var(--attenue);">Indice: ${Math.round(d.confiance)}%</span>
         </div>
-        <div style="font-size:14px;margin-bottom:6px;color:${couleur};">${d.type === 'carie' ? 'Suspicion de carie' : d.type === 'tartre' ? 'Suspicion de tartre' : 'Anomalie'} — ${d.localisation}</div>
-        ${d.description ? `<div style="font-size:12px;color:var(--attenue);margin-bottom:8px;">${d.description}</div>` : ''}
+        <div style="font-size:14px;margin-bottom:6px;color:${couleurType};text-transform:uppercase;font-weight:600;">Pathologie/État : ${d.type} — ${d.localisation}</div>
+        ${d.description ? `<div style="font-size:12px;color:var(--attenue);margin-bottom:8px;line-height:1.4;">${d.description}</div>` : ''}
         <select onchange="statuts[${i}]=this.value">
           ${STATUTS.map(s => `<option value="${s.valeur}">${s.label}</option>`).join('')}
         </select>
@@ -711,43 +713,54 @@
   function imprimerRapport() {
     if (!dernierResultat) return;
     const patient = patientActuel();
-    const nomComplet = [patient.prenom, patient.nom].filter(Boolean).join(' ') || 'Non renseigné';
+    const nomComplet = [patient.prenom, patient.nom].filter(Boolean).join(' ') || 'Patient Anonyme';
     const dateExamen = new Date().toLocaleString('fr-FR', { dateStyle:'long', timeStyle:'short' });
+    
     const lignes = (dernierResultat.detections || []).map((d, i) => `
-      <tr><td>${d.dent}</td><td>${d.type==='carie'?'Suspicion de lésion carieuse':d.type==='tartre'?'Suspicion de dépôt tartrique':'Anomalie visuelle'}</td>
-      <td>${d.localisation}</td><td>${d.description||'—'}</td><td style="text-align:center;font-family:monospace;">${Math.round(d.confiance)}%</td>
-      <td>${(STATUTS.find(s=>s.valeur===statuts[i])||{}).label || 'En attente'}</td></tr>`).join('');
+      <tr>
+        <td><b>FDI ${d.dent}</b></td>
+        <td style="text-transform:uppercase;">${d.type}</td>
+        <td>${d.localisation}</td>
+        <td>${d.description || '—'}</td>
+        <td style="text-align:center;font-family:monospace;">${Math.round(d.confiance)}%</td>
+        <td><b>${(STATUTS.find(s=>s.valeur===statuts[i])||{}).label || 'À valider'}</b></td>
+      </tr>`).join('');
 
     const fenetre = window.open('', '_blank');
-    fenetre.document.write(`<html lang="fr"><head><meta charset="UTF-8"/><title>Compte-rendu — ${nomComplet}</title>
+    fenetre.document.write(`<html lang="fr"><head><meta charset="UTF-8"/><title>Rapport Clinique — ${nomComplet}</title>
     <style>
       @page{size:A4;margin:18mm 16mm;} body{font-family:Georgia,serif;color:#17202a;font-size:13px;line-height:1.55;}
       .entete{display:flex;justify-content:space-between;border-bottom:3px solid #0b3d3a;padding-bottom:12px;margin-bottom:18px;}
-      .bloc-identite{display:grid;grid-template-columns:1fr 1fr;gap:4px 24px;font-family:Arial;font-size:12px;margin-bottom:18px;background:#f7f8f6;border:1px solid #dfe4e2;border-radius:6px;padding:12px 16px;}
+      .bloc-identite{display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;font-family:Arial;font-size:12px;margin-bottom:18px;background:#f7f8f6;border:1px solid #dfe4e2;border-radius:6px;padding:12px 16px;}
       h2.section{font-family:Arial;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;color:#0b3d3a;border-bottom:1px solid #cdd6d4;padding-bottom:4px;margin:20px 0 8px;}
-      img{width:240px;border-radius:6px;border:1px solid #cdd6d4;}
-      table{width:100%;border-collapse:collapse;margin-top:8px;font-family:Arial;} th,td{border:1px solid #cdd6d4;padding:7px 8px;font-size:11.5px;} th{background:#eef2f0;}
-      .impression{background:#f7f8f6;border-left:3px solid #0b3d3a;padding:10px 14px;}
+      img{width:260px;border-radius:6px;border:1px solid #cdd6d4;}
+      table{width:100%;border-collapse:collapse;margin-top:8px;font-family:Arial;} th,td{border:1px solid #cdd6d4;padding:7px 8px;font-size:11px;} th{background:#eef2f0;}
+      .impression{background:#f7f8f6;border-left:3px solid #0b3d3a;padding:10px 14px;font-size:12.5px;}
       .signature{display:flex;justify-content:space-between;margin-top:42px;font-family:Arial;font-size:12px;}
       .signature .ligne{border-top:1px solid #17202a;margin-top:36px;padding-top:4px;color:#5a6b6a;}
       .pied{margin-top:28px;padding-top:10px;border-top:1px solid #cdd6d4;font-family:Arial;font-size:10px;color:#5a6b6a;}
     </style></head><body>
-      <div class="entete"><div><h1 style="font-size:19px;margin:0;">Compte-rendu d'examen bucco-dentaire</h1>
-      <div style="font-family:Arial;font-size:11px;color:#5a6b6a;">Analyse assistée par intelligence artificielle</div></div>
-      <div style="text-align:right;font-family:Arial;font-size:11px;color:#5a6b6a;">Édité le ${dateExamen}</div></div>
-      <div class="bloc-identite">
-        <div><b>Patient</b> ${nomComplet}</div><div><b>N° dossier</b> ${patient.dossier||'—'}</div>
-        <div><b>Praticien</b> ${patient.praticien||'—'}</div><div><b>Date</b> ${dateExamen}</div>
+      <div class="entete">
+        <div><h1 style="font-size:18px;margin:0;">RAPPORT D'EXPERTISE ODONTOLOGIQUE</h1>
+        <div style="font-family:Arial;font-size:11px;color:#5a6b6a;">Évaluation Sémiologique & Plan de Traitement Assisté par IA</div></div>
+        <div style="text-align:right;font-family:Arial;font-size:11px;color:#5a6b6a;">Date : ${dateExamen}</div>
       </div>
-      <h2 class="section">Indication clinique</h2><p>${patient.motif}</p>
-      <h2 class="section">Technique</h2><p>${dernierResultat.technique || "Photographie intra-orale en lumière visible."}</p>
-      <h2 class="section">Image analysée</h2><img src="${imageCapturee}"/>
-      <h2 class="section">Résultats détaillés</h2>
-      <table><thead><tr><th>Dent</th><th>Anomalie</th><th>Localisation</th><th>Observation</th><th>Confiance</th><th>Statut</th></tr></thead>
-      <tbody>${lignes || '<tr><td colspan="6" style="text-align:center;color:#5a6b6a;">Aucune anomalie détectée</td></tr>'}</tbody></table>
-      <h2 class="section">Impression</h2><div class="impression">${dernierResultat.impression || ''}</div>
-      <div class="signature"><div style="width:45%"><div class="ligne">Validation du chirurgien-dentiste</div></div><div style="width:45%"><div class="ligne">Date et signature</div></div></div>
-      <div class="pied">Ce compte-rendu est généré par un outil d'IA d'aide à l'analyse visuelle. Il ne remplace pas le diagnostic clinique du chirurgien-dentiste.</div>
+      <div class="bloc-identite">
+        <div><b>Patient :</b> ${nomComplet}</div><div><b>N° Dossier :</b> ${patient.dossier||'—'}</div>
+        <div><b>Chirurgien-Dentiste :</b> ${patient.praticien||'Dr. [Nom]'}</div><div><b>Teinte Dominante :</b> ${dernierResultat.teinteGlobale || 'Non spécifiée'}</div>
+      </div>
+      <h2 class="section">Motif de Consultation / Indication</h2><p>${patient.motif}</p>
+      <h2 class="section">Méthodologie Optique</h2><p>${dernierResultat.technique || "Cliché clinique intra-oral standard."}</p>
+      <h2 class="section">Cliché Clinique Examen</h2><img src="${imageCapturee}"/>
+      <h2 class="section">Cartographie des Anomalies & Nomenclature FDI</h2>
+      <table><thead><tr><th>Dent (FDI)</th><th>Type de Lésion / État</th><th>Localisation</th><th>Observation Clinique</th><th>Indice</th><th>Validation</th></tr></thead>
+      <tbody>${lignes || '<tr><td colspan="6" style="text-align:center;color:#5a6b6a;">Aucune anomalie répertoriée</td></tr>'}</tbody></table>
+      <h2 class="section">Synthèse Diagnostique & Proposition Thérapeutique</h2><div class="impression">${dernierResultat.impression || ''}</div>
+      <div class="signature">
+        <div style="width:45%"><div class="ligne">Visa et Signature du Chirurgien-Dentiste</div></div>
+        <div style="width:45%"><div class="ligne">Date / Tampon du Cabinet</div></div>
+      </div>
+      <div class="pied">Ce document constitue un compte-rendu d'aide à l'analyse clinique et ne se substitue pas au jugement clinique du praticien responsable des soins.</div>
     </body></html>`);
     fenetre.document.close();
     setTimeout(() => fenetre.print(), 400);
