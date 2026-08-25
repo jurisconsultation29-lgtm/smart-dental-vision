@@ -3,11 +3,11 @@
 #include <Adafruit_BME280.h>
 
 // --- DÉFINITION DES BROCHES ---
-const int PIN_BUZZER         = 26;  // Buzzer
-const int PIN_CAPTEUR_SALIVE = 36;  // Capteur de salive (GPIO 36 / VP)
-const int PIN_INFRARED       = 4;  // Capteur Infrarouge (GPIO 34)
-const int PIN_LED_1          = 33;  // LED Alerte
-const int PIN_LED_2          = 32;  // LED Normal
+const int PIN_BUZZER         = 26;  
+const int PIN_CAPTEUR_SALIVE = 36;  // VP / GPIO 36
+const int PIN_INFRARED       = 4;   // GPIO 4 (selon la sérigraphie du module)
+const int PIN_LED_1          = 33;  
+const int PIN_LED_2          = 32;  
 
 Adafruit_BME280 bme;
 
@@ -21,59 +21,79 @@ void setup() {
   // Initialisation du bus I2C pour le BME280 (SDA=21, SCL=22)
   Wire.begin(21, 22);
 
-  // Configuration des broches entrées/sorties
   pinMode(PIN_BUZZER, OUTPUT);
   pinMode(PIN_LED_1, OUTPUT);
   pinMode(PIN_LED_2, OUTPUT);
-  pinMode(PIN_INFRARED, INPUT);
+  
+  // Configuration de l'infrarouge en entrée avec résistance de rappel
+  pinMode(PIN_INFRARED, INPUT_PULLUP); 
 
-  // Initialisation du capteur BME280 (test des deux adresses i2c courantes: 0x76 ou 0x77)
+  // Initialisation du capteur BME280
   if (!bme.begin(0x76)) {
-    if (!bme.begin(0x77)) {
-      Serial.println("❌ BME280 introuvable ! Vérifie le câblage I2C.");
-    }
+    bme.begin(0x77);
   }
 
-  Serial.println("✅ Système SmartDental initialisé avec succès !");
+  // S'assurer que le buzzer est éteint au démarrage
+  digitalWrite(PIN_BUZZER, LOW);
+
+  Serial.println("✅ Système Smart Dental / Santé démarré !");
 }
 
 void loop() {
-  // Gestion de l'intervalle d'envoi (non bloquant)
+  // Exécution à intervalles réguliers (toutes les 2 secondes)
   if (millis() - dernierEnvoi >= intervalleEnvoi) {
     dernierEnvoi = millis();
 
-    // 1. Lecture de la température du BME280
+    // 1. Lecture de la température
     float temp = bme.readTemperature();
     if (isnan(temp)) temp = 0.0;
 
-    // 2. Lecture et conversion de la salive (GPIO 36)
+    // 2. Lecture et conversion du capteur de salive (0 à 100%)
     int brutSalive = analogRead(PIN_CAPTEUR_SALIVE);
     int tauxSalive = map(brutSalive, 4095, 0, 0, 100);
     if (tauxSalive < 0) tauxSalive = 0;
     if (tauxSalive > 100) tauxSalive = 100;
 
-    // 3. Lecture de l'infrarouge avec inversion logique (GPIO 34)
-    int etatInfrarouge = !digitalRead(PIN_INFRARED); 
+    // 3. Lecture de l'Infrarouge
+    int etatIR = digitalRead(PIN_INFRARED);
 
-    // 4. Gestion de la logique d'alerte (Buzzer et LEDs)
-    // Seuil d'alerte : si salive > 30% OU si l'infrarouge détecte un obstacle (1)
-    if (tauxSalive > 30 || etatInfrarouge == 1) {
-      digitalWrite(PIN_LED_1, HIGH);  // LED Alerte ON
-      digitalWrite(PIN_LED_2, LOW);   // LED Normal OFF
-      digitalWrite(PIN_BUZZER, HIGH); // Buzzer ON
-    } else {
-      digitalWrite(PIN_LED_1, LOW);   // LED Alerte OFF
-      digitalWrite(PIN_LED_2, HIGH);  // LED Normal ON
-      digitalWrite(PIN_BUZZER, LOW);  // Buzzer OFF
+    // --- 4. DIAGNOSTIC & GESTION DES ANOMALIES ---
+    String diagnosticHaleine = "Sain";
+    bool alerteAnomalie = false;
+
+    // Exemple de règles métiers pour les anomalies :
+    // - Température anormale (> 37.5°C) ET taux de salive très bas (< 20%) -> Risque pathologique / Halitose sévère
+    if (temp > 37.5 && tauxSalive < 20) {
+        diagnosticHaleine = "Risque Halitose / Sécheresse sévère";
+        alerteAnomalie = true;
+    } 
+    else if (tauxSalive < 20) {
+        diagnosticHaleine = "Sécheresse buccale (Attention)";
+        // Pas forcément d'alerte sonore continue, juste un avertissement textuel, ou tu peux activer alerteAnomalie si tu le souhaites
+    } 
+    else if (temp > 37.5) {
+        diagnosticHaleine = "Suspicion inflammation";
+        alerteAnomalie = true;
     }
 
-    // 5. Affichage des données au format JSON dans le Moniteur Série
+    // --- 5. GESTION DU BUZZER ---
+    if (alerteAnomalie) {
+        digitalWrite(PIN_BUZZER, HIGH); // Le buzzer sonne SEULEMENT s'il y a une anomalie
+        digitalWrite(PIN_LED_1, HIGH);  // Allume une LED d'alerte
+    } else {
+        digitalWrite(PIN_BUZZER, LOW);  // Silencieux le reste du temps
+        digitalWrite(PIN_LED_1, LOW);   // Éteint la LED d'alerte
+    }
+
+    // --- 6. AFFICHAGE JSON POUR TON APPLICATION ---
     Serial.print("{\"temp\":");
     Serial.print(temp);
     Serial.print(",\"salive\":");
     Serial.print(tauxSalive);
     Serial.print(",\"ir\":");
-    Serial.print(etatInfrarouge);
-    Serial.println("}");
+    Serial.print(etatIR);
+    Serial.print(",\"diagnostic\":\"");
+    Serial.print(diagnosticHaleine);
+    Serial.println("\"}");
   }
 }
