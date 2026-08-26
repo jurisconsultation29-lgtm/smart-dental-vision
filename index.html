@@ -252,14 +252,6 @@
       </div>
       <div id="statutCarte" style="font-size:12px;color:var(--attenue);">Carte non connectée — LED/buzzer simulés à l'écran uniquement.</div>
 
-      <!-- Optionnel / Pilotage Manuel du Kit (Ajouté selon la photo) -->
-      <div class="titre-panneau" style="margin-top:14px;">Pilotage Manuel du Kit</div>
-      <div class="manuel">
-        <button class="bouton" onclick="pilotageManuelKit('verte')">LED Verte (Prêt / GPIO 5 OFF)</button>
-        <button class="bouton" onclick="pilotageManuelKit('alerteRouge')">Alerte Rouge + Buzzer + GPIO 5 ON</button>
-        <button class="bouton" onclick="pilotageManuelKit('reset')">Reset / Éteindre Tout</button>
-      </div>
-
       <div class="titre-panneau" style="margin-top:14px;">Test manuel</div>
       <div class="manuel">
         <button class="bouton" onclick="definirLED('verte','fixe')">LED verte</button>
@@ -333,9 +325,13 @@
 
   // ===================================================================
   // MODULE "Nomenclature FDI" — SDV.Odontogramme
+  // Séparé logiquement du reste (caméra / IA / rapport / matériel) même si
+  // regroupé dans ce fichier unique, pour rester déployable en un clic sur
+  // GitHub Pages sans gestion de plusieurs fichiers.
   // ===================================================================
   const SDV = { Odontogramme: {}, Historique: {}, IR: {} };
 
+  // Les 32 dents permanentes, numérotées FDI, avec leurs métadonnées fixes.
   const DENTS_FDI = [
     ...[18,17,16,15,14,13,12,11].map((n,i) => ({ numero:n, arcade:'maxillaire', cote:'droit', type:['molaire','molaire','molaire','prémolaire','prémolaire','canine','incisive','incisive'][i] })),
     ...[21,22,23,24,25,26,27,28].map((n,i) => ({ numero:n, arcade:'maxillaire', cote:'gauche', type:['incisive','incisive','canine','prémolaire','prémolaire','molaire','molaire','molaire'][i] })),
@@ -353,6 +349,7 @@
     return "Non déterminable";
   }
 
+  // Code de secours si l'IA omet le champ codeRisque (ne devrait pas arriver, mais on ne bloque jamais dessus).
   function codeRisqueSecours(niveau) {
     if (niveau === 'Très forte' || niveau === 'Forte') return 'ROUGE';
     if (niveau === 'Modérée') return 'ORANGE';
@@ -360,6 +357,14 @@
   }
 
   const COULEUR_RISQUE = { VERT: 'var(--accent)', ORANGE: 'var(--jaune)', ROUGE: 'var(--rouge)' };
+
+  const TYPES_ANOMALIE = [
+    'carie', 'tartre', 'plaque', 'gingivite', 'atteinte_parodontale', 'recession_gingivale',
+    'inflammation_gingivale', 'coloration', 'dyschromie', 'fracture', 'fissure', 'usure',
+    'abrasion', 'erosion', 'attrition', 'dent_absente', 'dent_partiellement_eruptee',
+    'anomalie_forme', 'anomalie_position', 'restauration', 'couronne', 'bridge', 'facette',
+    'implant', 'defaut_marginal', 'defaut_occlusion', 'autre',
+  ];
 
   const LIBELLES_ANOMALIE = {
     carie: 'Lésion suspecte de carie', tartre: 'Dépôt compatible avec du tartre', plaque: 'Plaque visible',
@@ -387,6 +392,7 @@
     aide.textContent = "Utilisée uniquement dans votre navigateur, jamais envoyée ailleurs ni sauvegardée. " + info.aide;
   }
 
+  // --- Sélection de la caméra source (ex: caméra dentaire USB) ---
   async function rafraichirCameras() {
     const select = document.getElementById('cameraSource');
     try {
@@ -394,7 +400,7 @@
       const cams = appareils.filter(a => a.kind === 'videoinput');
       select.innerHTML = '<option value="">Caméra par défaut du système</option>' +
         cams.map((c, i) => `<option value="${c.deviceId}">${c.label || 'Caméra ' + (i+1)}</option>`).join('');
-    } catch (e) {}
+    } catch (e) { /* liste indisponible avant autorisation, ce n'est pas bloquant */ }
   }
 
   function patientActuel() {
@@ -407,44 +413,58 @@
     };
   }
 
+  // --- Diagnostic système : explique clairement ce qui bloque, sans deviner ---
   async function executerDiagnostic() {
     const lignes = [];
     const ok = (t) => `<span style="color:var(--accent)">✔</span> ${t}`;
     const ko = (t) => `<span style="color:var(--rouge)">✘</span> ${t}`;
     const warn = (t) => `<span style="color:var(--jaune)">⚠</span> ${t}`;
 
+    // 1. Protocole / contexte sécurisé
     const protocole = location.protocol;
     if (window.isSecureContext) {
       lignes.push(ok(`Contexte sécurisé (${protocole}) — la caméra peut être autorisée.`));
     } else {
-      lignes.push(ko(`Contexte NON sécurisé (${protocole}) — le navigateur bloque systématiquement la caméra ici. Ouvrez la page via http://localhost.`));
+      lignes.push(ko(`Contexte NON sécurisé (${protocole}) — le navigateur bloque systématiquement la caméra ici. Ouvrez la page via http://localhost (petit serveur local) au lieu d'un double-clic direct.`));
     }
 
+    // 2. API caméra disponible
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       lignes.push(ok('API caméra (getUserMedia) disponible dans ce navigateur.'));
       try {
         const appareils = await navigator.mediaDevices.enumerateDevices();
         const cams = appareils.filter(a => a.kind === 'videoinput');
-        if (cams.length > 0) lignes.push(ok(`${cams.length} caméra(s) détectée(s) par le système.`));
-        else lignes.push(warn("Aucune caméra détectée pour l'instant."));
+        if (cams.length > 0) {
+          lignes.push(ok(`${cams.length} caméra(s) détectée(s) par le système.`));
+        } else {
+          lignes.push(warn("Aucune caméra détectée pour l'instant (normal si l'autorisation n'a pas encore été donnée une première fois)."));
+        }
       } catch (e) {
         lignes.push(warn('Impossible de lister les caméras : ' + e.message));
       }
     } else {
-      lignes.push(ko('API caméra indisponible dans ce navigateur.'));
+      lignes.push(ko('API caméra indisponible dans ce navigateur/environnement.'));
     }
 
+    // 3. Clé API IA
     const cle = document.getElementById('cleApi')?.value.trim();
-    if (cle) lignes.push(ok('Clé API renseignée — l\'analyse IA peut être lancée.'));
-    else lignes.push(warn('Aucune clé API renseignée — l\'analyse IA ne fonctionnera pas.'));
+    if (cle) {
+      lignes.push(ok('Clé API renseignée — l\'analyse IA peut être lancée.'));
+    } else {
+      lignes.push(warn('Aucune clé API Anthropic renseignée — l\'analyse IA ne fonctionnera pas tant que ce champ est vide.'));
+    }
 
     document.getElementById('diagContenu').innerHTML = lignes.join('<br/>');
   }
 
   // ===================================================================
-  // MODULE Odontogramme
+  // MODULE Odontogramme — rendu en véritable arcade dentaire (SVG)
   // ===================================================================
-  SDV.Odontogramme.etatDents = {};
+  SDV.Odontogramme.etatDents = {}; // { [numero]: dernière détection }
+
+  // Ordre visuel des dents le long de chaque arcade (indépendant de l'ordre
+  // de stockage DENTS_FDI) : Q1→Q2 pour le maxillaire, Q4→Q3 pour la mandibule,
+  // comme sur un schéma dentaire classique.
   const SEQUENCE_MAXILLAIRE  = [18,17,16,15,14,13,12,11, 21,22,23,24,25,26,27,28];
   const SEQUENCE_MANDIBULAIRE = [48,47,46,45,44,43,42,41, 31,32,33,34,35,36,37,38];
 
@@ -457,6 +477,7 @@
 
   SDV.Odontogramme.rendre = function () {
     const conteneur = document.getElementById('odontogramme');
+
     function dessinerArcade(sequence, yPic, amplitude, sensAmplitude) {
       return sequence.map((numero, i) => {
         const { x, y } = positionDent(i, sequence.length, yPic, amplitude, sensAmplitude);
@@ -480,8 +501,13 @@
         <text x="420" y="18" text-anchor="end" fill="var(--or)" font-size="11" font-weight="700">Q2</text>
         <text x="20" y="258" fill="var(--or)" font-size="11" font-weight="700">Q4</text>
         <text x="420" y="258" text-anchor="end" fill="var(--or)" font-size="11" font-weight="700">Q3</text>
+
+        <text x="10" y="140" fill="var(--attenue)" font-size="10" transform="rotate(-90 10 140)">DROITE</text>
+        <text x="430" y="140" text-anchor="end" fill="var(--attenue)" font-size="10" transform="rotate(-90 430 140)">GAUCHE</text>
+
         <text x="220" y="30" text-anchor="middle" fill="var(--texte)" font-size="12" font-weight="700">MAXILLAIRE (haut)</text>
         <text x="220" y="245" text-anchor="middle" fill="var(--texte)" font-size="12" font-weight="700">MANDIBULE (bas)</text>
+
         ${dessinerArcade(SEQUENCE_MAXILLAIRE, 45, 70, 1)}
         ${dessinerArcade(SEQUENCE_MANDIBULAIRE, 205, 70, -1)}
       </svg>`;
@@ -505,11 +531,13 @@
     }
     zone.innerHTML = `<b>Dent ${numero}</b> — ${meta.type}, arcade ${meta.arcade}, côté ${meta.cote}<br/>
       <b>${LIBELLES_ANOMALIE[det.type] || det.type}</b>${det.surface ? ' — surface ' + det.surface : ''}<br/>
-      Confiance : ${det.confiance || '—'}`;
+      Confiance : ${det.confiance || '—'}<br/>
+      ${det.observationVisuelle ? 'Observation : ' + det.observationVisuelle + '<br/>' : ''}
+      ${det.recommandation ? 'Recommandation : ' + det.recommandation : ''}`;
   };
 
   // ===================================================================
-  // MODULE Historique
+  // MODULE Historique — examens de la session (en mémoire, exportable)
   // ===================================================================
   SDV.Historique.examens = [];
 
@@ -560,7 +588,7 @@
     SDV.Odontogramme.rendre();
   });
 
-  // --- Pont matériel réel : ESP32 via Web Serial API ---
+  // --- Pont matériel réel : ESP32 via Web Serial API (Chrome/Edge PC uniquement) ---
   let portSerie = null;
   let writerSerie = null;
   let lectureEnCours = false;
@@ -569,25 +597,31 @@
     const statut = document.getElementById('statutCarte');
     if (!('serial' in navigator)) {
       statut.style.color = 'var(--rouge)';
-      statut.textContent = "Web Serial indisponible sur ce navigateur (utilisez Chrome ou Edge PC).";
+      statut.textContent = "Web Serial indisponible sur ce navigateur/appareil (fonctionne sur Chrome ou Edge, PC uniquement, pas sur mobile). LED/buzzer restent simulés à l'écran.";
       return;
     }
     try {
       portSerie = await navigator.serial.requestPort();
       await portSerie.open({ baudRate: 115200 });
+      // Un writer neuf à chaque connexion : réutiliser un ancien writer après
+      // une déconnexion/reconnexion est la cause n°1 d'un "pilotage qui ne
+      // répond plus" (le flux writable précédent est fermé, les écritures
+      // échouent silencieusement).
       writerSerie = portSerie.writable.getWriter();
       statut.style.color = 'var(--accent)';
-      statut.textContent = 'Carte ESP32 connectée — LED, buzzer et kit actifs.';
+      statut.textContent = 'Carte ESP32 connectée — LED, buzzer, bouton physique, capteur IR et télémétrie sont réellement liés à l\'application.';
       document.getElementById('btnConnecterCarte').textContent = 'Carte connectée ✔';
       document.getElementById('btnConnecterCarte').disabled = true;
       ecouterEvenementsCarte();
-      envoyerCommandeSerie('V');
+      envoyerCommandeSerie('V'); // resynchronise l'état LED dès la connexion
     } catch (e) {
       statut.style.color = 'var(--rouge)';
       statut.textContent = "Connexion annulée ou impossible : " + e.message;
     }
   }
 
+  // Réinitialise proprement l'état de connexion — permet de relancer
+  // "Connecter la carte" après un débranchement, sans recharger la page.
   function reinitialiserConnexionCarte(message) {
     writerSerie = null;
     portSerie = null;
@@ -600,11 +634,19 @@
     btn.disabled = false;
   }
 
+  if ('serial' in navigator) {
+    navigator.serial.addEventListener('disconnect', () => {
+      reinitialiserConnexionCarte('Carte débranchée — reconnectez-la puis cliquez à nouveau sur "Connecter la carte".');
+    });
+  }
+
+  // Écoute en continu les lignes envoyées par la carte : événements physiques
+  // (BOUTON1, IR_DETECT) ET télémétrie JSON ({"type":"telemetrie",...}).
   async function ecouterEvenementsCarte() {
     if (!portSerie?.readable || lectureEnCours) return;
     lectureEnCours = true;
     const decodeur = new TextDecoderStream();
-    portSerie.readable.pipeTo(decodeur.writable).catch(() => {});
+    const pipePromise = portSerie.readable.pipeTo(decodeur.writable).catch(() => {});
     const lecteur = decodeur.readable.getReader();
     let tampon = '';
     try {
@@ -620,9 +662,10 @@
         }
       }
     } catch (e) {
+      // Déconnexion ou erreur de lecture : on nettoie l'état plutôt que de rester bloqué en silence.
     } finally {
       lectureEnCours = false;
-      reinitialiserConnexionCarte('Liaison série interrompue.');
+      reinitialiserConnexionCarte('Liaison série interrompue — reconnectez la carte si besoin.');
     }
   }
 
@@ -630,18 +673,24 @@
     const video = document.getElementById('video');
     const camerActive = video && video.style.display !== 'none';
 
+    // Ligne de télémétrie JSON envoyée par le firmware toutes les 2 secondes.
     if (ligne.startsWith('{')) {
       try {
         const donnees = JSON.parse(ligne);
         if (donnees.type === 'telemetrie') afficherTelemetrie(donnees);
-      } catch (e) {}
+        else if (donnees.type === 'erreur') {
+          const statut = document.getElementById('statutCarte');
+          statut.style.color = 'var(--rouge)';
+          statut.textContent = 'Carte : ' + donnees.message;
+        }
+      } catch (e) { /* ligne JSON incomplète/corrompue : on l'ignore silencieusement */ }
       return;
     }
 
     if (ligne === 'BOUTON1' || ligne === 'IR_DETECT') {
       const statut = document.getElementById('statutCarte');
       statut.style.color = 'var(--or)';
-      statut.textContent = (ligne === 'BOUTON1' ? 'Bouton physique pressé' : 'Objet détecté par capteur IR') + ' → capture déclenchée.';
+      statut.textContent = (ligne === 'BOUTON1' ? 'Bouton physique du kit pressé' : 'Objet détecté par le capteur IR du kit') + ' → capture déclenchée.';
       if (camerActive && !analyseEnCoursFlag) {
         capturerDepuisCamera();
         lancerAnalyseIA();
@@ -658,36 +707,23 @@
       document.getElementById('statutCarte').insertAdjacentElement('afterend', zone);
     }
     const temp = donnees.temperatureC != null ? donnees.temperatureC.toFixed(1) + ' °C' : 'capteur indisponible';
-    zone.innerHTML = `🌡️ Température : <b>${temp}</b>`;
+    zone.innerHTML = `🌡️ Température (module TEMP/PRESSURE/HUM du kit) : <b>${temp}</b>`;
   }
 
+  // Envoie une seule lettre au firmware (voir main.cpp pour le protocole).
+  // Ne bloque jamais l'application si la carte n'est pas connectée.
   async function envoyerCommandeSerie(lettre) {
     if (!writerSerie) return;
     try {
       await writerSerie.write(new TextEncoder().encode(lettre));
     } catch (e) {
-      reinitialiserConnexionCarte('Écriture série impossible.');
+      // Écriture impossible = très probablement une carte débranchée : on
+      // remet l'interface en état "déconnecté" plutôt que d'échouer en silence.
+      reinitialiserConnexionCarte('Écriture série impossible — la carte semble déconnectée.');
     }
   }
 
-  // --- Pilotage Manuel du Kit (Ajouté selon la photo) ---
-  function pilotageManuelKit(action) {
-    if (action === 'verte') {
-      definirLED('verte', 'fixe');
-    } else if (action === 'alerteRouge') {
-      definirLED('rouge', 'clignotant');
-      jouerBuzzer('alerte');
-    } else if (action === 'reset') {
-      definirLED('verte', 'fixe');
-      const zone = document.getElementById('telemetrieCarte');
-      if (zone) zone.remove();
-      const statut = document.getElementById('statutCarte');
-      statut.style.color = 'var(--attenue)';
-      statut.textContent = portSerie ? 'Carte connectée — État réinitialisé.' : 'Système réinitialisé.';
-      envoyerCommandeSerie('O'); // Commande pour tout éteindre sur le firmware
-    }
-  }
-
+  // --- LED / buzzer ---
   function definirLED(couleur, mode) {
     const led = document.getElementById('ledEtat');
     led.className = 'led ' + couleur + (mode === 'clignotant' ? ' clignote' : '');
@@ -710,11 +746,12 @@
         const debut = ctx.currentTime + i * 0.22;
         osc.start(debut); osc.stop(debut + 0.16);
       });
-    } catch (e) {}
+    } catch (e) { /* le buzzer est un bonus, ne bloque jamais l'app */ }
     const lettresBuzzer = { alerte: 'B', erreur: 'E', capture: 'C' };
     if (lettresBuzzer[motif]) envoyerCommandeSerie(lettresBuzzer[motif]);
   }
 
+  // --- Caméra ---
   function choisirMode(mode) {
     document.getElementById('ongletCamera').classList.toggle('actif', mode === 'camera');
     document.getElementById('ongletImport').classList.toggle('actif', mode === 'import');
@@ -725,7 +762,7 @@
   async function demarrerCamera() {
     const msg = document.getElementById('messageCamera');
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      msg.textContent = "getUserMedia indisponible.";
+      msg.textContent = "getUserMedia indisponible. Ouvrez cette page via http://localhost (petit serveur local) plutôt qu'en double-clic direct, ou utilisez l'onglet Importer.";
       return;
     }
     const deviceId = document.getElementById('cameraSource').value;
@@ -743,10 +780,15 @@
       document.getElementById('btnCapturer').style.display = 'inline-block';
       definirLED('verte','fixe');
       jouerBuzzer('connexion');
-      rafraichirCameras();
+      rafraichirCameras(); // les libellés des caméras deviennent disponibles après autorisation
     } catch (e) {
+      const raisons = {
+        NotAllowedError: "Autorisation caméra refusée par le navigateur.",
+        NotFoundError: "Aucune caméra détectée sur cet appareil.",
+        NotReadableError: "La caméra est peut-être déjà utilisée par une autre application.",
+      };
       msg.style.display = 'block';
-      msg.textContent = "Impossible d'accéder à la caméra : " + e.message;
+      msg.textContent = "Impossible d'accéder à la caméra : " + (raisons[e.name] || e.message || e.name);
       definirLED('rouge','clignotant');
     }
   }
@@ -773,7 +815,7 @@
   function demarrerAnalyseContinue() {
     arreterAnalyseContinue();
     intervalleAnalyseContinue = setInterval(async () => {
-      if (analyseEnCoursFlag) return;
+      if (analyseEnCoursFlag) return; // on ne superpose pas deux analyses
       const video = document.getElementById('video');
       if (!video || video.style.display === 'none') return;
       capturerDepuisCamera();
@@ -798,6 +840,7 @@
     if (!fichier) return;
     const lecteur = new FileReader();
     lecteur.onload = () => traiterNouvelleImage(lecteur.result);
+    lecteur.onerror = () => alert("Impossible de lire ce fichier. Essayez une image JPG/PNG.");
     lecteur.readAsDataURL(fichier);
   }
 
@@ -857,7 +900,7 @@
     el.style.color = q.suffisante ? 'var(--accent)' : 'var(--rouge)';
     el.textContent = q.suffisante
       ? "Qualité d'image suffisante pour l'analyse."
-      : `Qualité insuffisante (luminosité: ${q.luminosite}, netteté: ${q.nettete}).`;
+      : `Qualité insuffisante (luminosité: ${q.luminosite}, netteté: ${q.nettete}) — vous pouvez tout de même analyser, mais reprendre la photo est recommandé.`;
   }
 
   function supprimerImage(id) {
@@ -872,24 +915,68 @@
     afficherGalerie();
   }
 
+  // Bouton "Supprimer / Effacer" sous l'image active : jette la capture en cours.
   function supprimerImageActive() {
     if (!imageActiveId) return;
     supprimerImage(imageActiveId);
   }
 
+  // Bouton "Enregistrer / Télécharger" : sauvegarde le cliché actif sur le disque de l'utilisateur.
   function telechargerImageActive() {
     if (!imageCapturee) return;
     const lien = document.createElement('a');
     const patient = patientActuel();
     const horodatage = new Date().toISOString().replace(/[:.]/g, '-');
+    const nomFichier = `smart-dental-${(patient.dossier || 'patient').replace(/\s+/g,'_')}-${horodatage}.jpg`;
     lien.href = imageCapturee;
-    lien.download = `smart-dental-${(patient.dossier || 'patient')}-${horodatage}.jpg`;
+    lien.download = nomFichier;
     document.body.appendChild(lien);
     lien.click();
     document.body.removeChild(lien);
   }
 
-  const PROMPT_SYSTEME = `Tu es un chirurgien-dentiste expert...`;
+  // --- Analyse IA réelle (multi-fournisseur : Anthropic, OpenAI, Google) ---
+  // Prompt "expert" — rôle chirurgien-dentiste, nomenclature FDI, 5 niveaux de
+  // confiance, distinction stricte observation visuelle / hypothèse diagnostique /
+  // confirmation clinique nécessaire. Le schéma JSON reprend les champs demandés
+  // dent par dent (arcade, côté, type, statut, surface, recommandation...).
+  const PROMPT_SYSTEME = `Tu es un chirurgien-dentiste expert en diagnostic odontologique et imagerie dentaire. Tu analyses une photographie intra-orale en lumière visible (PAS une radiographie) pour assister — jamais remplacer — l'examen clinique du praticien.
+
+RÈGLES STRICTES :
+- N'affirme JAMAIS qu'une pathologie est certaine si l'image ne permet pas de la confirmer. Utilise un vocabulaire de suspicion ("zone compatible avec", "suspicion de", "aspect pouvant évoquer").
+- Chaque détection doit indiquer un niveau de confiance parmi EXACTEMENT : "Très forte", "Forte", "Modérée", "Faible", "Non déterminable".
+- Distingue toujours : observation visuelle brute (ce qui est vu) vs hypothèse diagnostique (ce que cela pourrait évoquer) vs nécessité de confirmation clinique/radiographique.
+- Utilise la nomenclature FDI/ISO 3950 à deux chiffres. N'attribue JAMAIS un numéro de dent au hasard : si la dent ne peut pas être identifiée avec fiabilité, indique "numerotationNonDeterminable": true et une description de zone à la place du numéro.
+- Une caméra intra-orale ne permet PAS d'évaluer la profondeur réelle d'une lésion carieuse ni de mesurer une poche parodontale : ne jamais l'affirmer. Distingue "lésion suspecte visible" de "carie confirmée".
+- N'invente jamais une localisation, une cause de coloration, ou une dent absente non visible : utilise "Non visualisée sur l'image" plutôt que "absente" si l'information est insuffisante.
+- Pour une prothèse à l'aspect potentiellement mal adapté, n'affirme jamais "mal adaptée" : utilise "aspect pouvant évoquer un défaut d'adaptation marginale, à confirmer cliniquement".
+- Attribue un code de risque VERT/ORANGE/ROUGE à chaque détection : ROUGE pour une confiance "Très forte" ou "Forte" sur une anomalie active (carie, fracture, atteinte parodontale...), ORANGE pour une confiance "Modérée", VERT pour "Faible"/"Non déterminable" ou une simple observation cosmétique. C'est un code de priorisation, jamais un diagnostic.
+
+Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant/après, sans balises markdown, au format EXACT :
+{
+  "qualiteSuffisante": booléen,
+  "commentaireQualite": "string",
+  "technique": "string (rappelle qu'il s'agit d'une photo intra-orale en lumière visible, pas une radiographie)",
+  "detections": [{
+    "dent": "string (numéro FDI à 2 chiffres, ou description de zone si non déterminable)",
+    "numerotationNonDeterminable": booléen,
+    "arcade": "maxillaire ou mandibulaire ou non déterminable",
+    "cote": "droit ou gauche ou non déterminable",
+    "type": "un des types suivants: carie, tartre, plaque, gingivite, atteinte_parodontale, recession_gingivale, inflammation_gingivale, coloration, dyschromie, fracture, fissure, usure, abrasion, erosion, attrition, dent_absente, dent_partiellement_eruptee, anomalie_forme, anomalie_position, restauration, couronne, bridge, facette, implant, defaut_marginal, defaut_occlusion, autre",
+    "surface": "string (occlusale/vestibulaire/linguale/palatine/mésiale/distale/cervicale/incisale, ou non déterminable)",
+    "observationVisuelle": "string (ce qui est objectivement vu)",
+    "hypotheseDiagnostique": "string (ce que cela pourrait évoquer, au conditionnel)",
+    "confirmationRequise": "string (examen clinique et/ou complémentaire recommandé)",
+    "confiance": "Très forte, Forte, Modérée, Faible ou Non déterminable",
+    "confiancePourcentage": "nombre entre 0 et 100, uniquement une estimation indicative, PAS une probabilité clinique calibrée",
+    "codeRisque": "VERT (observation mineure, surveillance simple), ORANGE (suspicion modérée à confirmer rapidement), ou ROUGE (suspicion forte nécessitant une prise en charge rapprochée) — jamais un diagnostic, seulement un code de priorisation clinique",
+    "recommandation": "string"
+  }],
+  "impression": "string (synthèse générale façon compte-rendu, rappelant les limites de l'analyse)",
+  "codeRisqueGlobal": "VERT, ORANGE ou ROUGE — le code le plus élevé parmi toutes les détections, VERT si aucune détection",
+  "avertissement": "Cet outil constitue une aide à l'examen et à la documentation clinique. Les résultats générés par l'intelligence artificielle ne constituent pas, à eux seuls, un diagnostic médical définitif. Toute anomalie doit être interprétée et confirmée par un chirurgien-dentiste qualifié, avec examens complémentaires lorsque nécessaire."
+}
+Si rien de fiable n'est identifiable, retourne detections vide, codeRisqueGlobal "VERT", et impression indiquant l'absence d'anomalie visuelle significative.`;
 
   function extraireJSON(texte) {
     const nettoye = (texte || '{}').replace(/```json|```/g, '').trim();
@@ -942,7 +1029,7 @@
     const erreurDiv = document.getElementById('erreurAnalyse');
     erreurDiv.textContent = '';
     if (!imageCapturee) return;
-    if (!cle) { erreurDiv.textContent = "Renseignez votre clé API."; return; }
+    if (!cle) { erreurDiv.textContent = "Renseignez votre clé API ci-dessus pour lancer une analyse réelle."; return; }
 
     analyseEnCoursFlag = true;
     document.getElementById('btnAnalyser').disabled = true;
@@ -952,9 +1039,10 @@
     try {
       const base64 = imageCapturee.split(',')[1];
       const entete = imageCapturee.match(/^data:(image\/[a-zA-Z+]+);base64,/);
-      const mediaType = entete ? entete[1] : 'image/jpeg';
+      const typesAcceptes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      const mediaType = entete && typesAcceptes.includes(entete[1]) ? entete[1] : 'image/jpeg';
       const patient = patientActuel();
-      const texteUtilisateur = `Analyse cette photo intra-orale (motif : ${patient.motif}).`;
+      const texteUtilisateur = `Analyse cette photo intra-orale (motif : ${patient.motif}). Identifie les zones suspectes de tartre ou carie et rédige une impression de synthèse.`;
 
       const appels = { anthropic: appelerAnthropic, google: appelerGoogle };
       const parse = await appels[fournisseur](cle, base64, mediaType, texteUtilisateur);
@@ -968,11 +1056,14 @@
 
       if (detectionsAuDessusDuSeuil.length > 0) {
         definirLED('rouge','clignotant'); jouerBuzzer('alerte');
-        SDV.Historique.ajouter(parse, imageCapturee, patient);
+        // Synchronisation simultanée : écran (déjà fait ci-dessus) + carte ESP32
+        // (déjà fait via envoyerCommandeSerie dans definirLED/jouerBuzzer) + AbaFusion.
+        SDV.Historique.ajouter(parse, imageCapturee, patient); // capture/archivage automatique au-delà du seuil
         if (document.getElementById('caseSyncAuto').checked) envoyerVersAbaFusion();
       } else if ((parse.detections || []).length > 0) {
         definirLED('jaune','fixe'); jouerBuzzer('capture');
-      } else { definirLED('verte','fixe'); }
+      }
+      else { definirLED('verte','fixe'); }
       document.getElementById('btnRapport').style.display = 'inline-block';
     } catch (e) {
       erreurDiv.textContent = "L'analyse IA a échoué : " + e.message;
@@ -993,49 +1084,157 @@
     }
     if (r.impression) html += `<p style="font-size:13px;color:var(--attenue);border-left:3px solid var(--accent);padding-left:10px;margin-bottom:12px;">${r.impression}</p>`;
     const dets = r.detections || [];
-    if (dets.length === 0) html += `<p style="font-size:13px;color:var(--accent);">Aucune anomalie identifiée.</p>`;
+    if (dets.length === 0) html += `<p style="font-size:13px;color:var(--accent);">Aucune anomalie identifiée sur cette image.</p>`;
     dets.forEach((d, i) => {
       const pct = Math.round(d.confiancePourcentage ?? 0);
       const niveau = d.confiance || niveauConfiance(pct);
       const risque = d.codeRisque || codeRisqueSecours(niveau);
       const couleurRisque = COULEUR_RISQUE[risque] || COULEUR_RISQUE.VERT;
+      const libelle = LIBELLES_ANOMALIE[d.type] || d.type || 'Anomalie';
+      const dentAffichee = d.numerotationNonDeterminable ? 'zone non numérotée' : d.dent;
       html += `<div class="detection-carte" style="border-left:4px solid ${couleurRisque};">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-          <span style="font-family:monospace;font-weight:700;color:var(--accent);">Dent ${d.dent}</span>
+          <span style="font-family:monospace;font-weight:700;color:var(--accent);">Dent ${dentAffichee}</span>
+          <span style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:${couleurRisque};color:#04140d;">${risque}</span>
+            <span style="font-family:monospace;font-size:12px;color:var(--attenue);">${niveau}${pct ? ' (' + pct + '%)' : ''}</span>
+          </span>
         </div>
-        <div style="font-size:14px;margin-bottom:4px;color:var(--texte);">${LIBELLES_ANOMALIE[d.type] || d.type}</div>
+        <div style="font-size:14px;margin-bottom:4px;color:var(--texte);">${libelle}${d.surface ? ' — surface ' + d.surface : ''}</div>
+        ${d.observationVisuelle ? `<div style="font-size:12px;color:var(--attenue);margin-bottom:4px;"><b>Observation :</b> ${d.observationVisuelle}</div>` : ''}
+        ${d.hypotheseDiagnostique ? `<div style="font-size:12px;color:var(--attenue);margin-bottom:4px;"><b>Hypothèse :</b> ${d.hypotheseDiagnostique}</div>` : ''}
+        ${d.confirmationRequise ? `<div style="font-size:12px;color:var(--or);margin-bottom:8px;"><b>À confirmer :</b> ${d.confirmationRequise}</div>` : ''}
+        <select onchange="statuts[${i}]=this.value">
+          ${STATUTS.map(s => `<option value="${s.valeur}">${s.label}</option>`).join('')}
+        </select>
       </div>`;
     });
     conteneur.innerHTML = html;
     SDV.Odontogramme.mettreAJour(dets);
   }
 
+  // --- Automatisation AbaFusion ---
+  // Correspond aux nœuds "Postgres Action" / "Générer PDF" / "Email-Slack" du
+  // workflow AbaFusion : notre app a déjà fait le Contrôle Qualité et l'Agent IA
+  // côté navigateur ; le canvas AbaFusion prend le relais pour la persistance et la diffusion.
+  // Ouvre directement le canvas d'automatisation AbaFusion dans un nouvel onglet.
   function ouvrirCanvasAbaFusion() {
     const url = document.getElementById('urlCanvasAbaFusion').value.trim();
-    if (url) window.open(url, '_blank');
+    const statut = document.getElementById('statutAbaFusion');
+    if (!url) { statut.style.color = 'var(--rouge)'; statut.textContent = "Renseignez d'abord l'URL de votre canvas AbaFusion (ex: https://stg-orch.abafusion.ai/automation/votre-id)."; return; }
+    window.open(url, '_blank');
   }
 
   async function envoyerVersAbaFusion() {
     const url = document.getElementById('urlWebhookAbaFusion').value.trim();
     const statut = document.getElementById('statutAbaFusion');
-    if (!url) { statut.style.color = 'var(--rouge)'; statut.textContent = "Renseignez l'URL du webhook."; return; }
+    statut.style.color = 'var(--attenue)';
+    if (!url) { statut.style.color = 'var(--rouge)'; statut.textContent = "Renseignez l'URL du webhook AbaFusion."; return; }
+    if (!imageCapturee) { statut.style.color = 'var(--rouge)'; statut.textContent = "Capturez ou importez une image avant l'envoi."; return; }
+
+    const patient = patientActuel();
+    const payload = {
+      source: 'smart-dental-vision',
+      horodatage: new Date().toISOString(),
+      patient,
+      image_base64: imageCapturee,
+      analyse: dernierResultat || null,
+      statuts_praticien: statuts,
+    };
+
+    statut.textContent = 'Envoi en cours…';
     try {
-      await fetch(url, {
+      const reponse = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source: 'smart-dental-vision', image_base64: imageCapturee, analyse: dernierResultat }),
+        body: JSON.stringify(payload),
       });
+      if (!reponse.ok) throw new Error('HTTP ' + reponse.status);
       statut.style.color = 'var(--accent)';
-      statut.textContent = 'Envoyé avec succès vers AbaFusion.';
+      statut.textContent = 'Envoyé au workflow AbaFusion avec succès — la suite (Postgres, PDF, alerte) se poursuit côté serveur.';
     } catch (e) {
       statut.style.color = 'var(--rouge)';
-      statut.textContent = "Échec de l'envoi : " + e.message;
+      statut.textContent = "Échec de l'envoi : " + e.message + " (vérifiez l'URL et que le webhook AbaFusion accepte les requêtes CORS).";
     }
   }
 
   function imprimerRapport() {
     if (!dernierResultat) return;
-    window.print();
+    const patient = patientActuel();
+    const nomComplet = [patient.prenom, patient.nom].filter(Boolean).join(' ') || 'Non renseigné';
+    const dateExamen = new Date().toLocaleString('fr-FR', { dateStyle:'long', timeStyle:'short' });
+    const dets = dernierResultat.detections || [];
+    const couleursImpression = { VERT:'#1f9d55', ORANGE:'#c47a12', ROUGE:'#c0392b' };
+    const lignes = dets.map((d, i) => {
+      const pct = Math.round(d.confiancePourcentage ?? 0);
+      const niveau = d.confiance || niveauConfiance(pct);
+      const risque = d.codeRisque || codeRisqueSecours(niveau);
+      return `<tr>
+      <td style="text-align:center;"><span style="display:inline-block;padding:2px 6px;border-radius:4px;background:${couleursImpression[risque]};color:#fff;font-weight:700;font-size:10px;">${risque}</span></td>
+      <td>${d.numerotationNonDeterminable ? 'Non déterminable' : d.dent}</td>
+      <td>${LIBELLES_ANOMALIE[d.type] || d.type}</td>
+      <td>${d.surface || '—'}</td>
+      <td>${d.observationVisuelle || '—'}</td>
+      <td>${d.hypotheseDiagnostique || '—'}</td>
+      <td style="text-align:center;">${niveau}${pct ? ' ('+pct+'%)' : ''}</td>
+      <td>${(STATUTS.find(s=>s.valeur===statuts[i])||{}).label || 'En attente'}</td></tr>`;
+    }).join('');
+
+    // Résumé odontogramme : uniquement les dents avec observation.
+    const lignesOdontogramme = dets.filter(d => !d.numerotationNonDeterminable && d.dent)
+      .map(d => `<tr><td>${d.dent}</td><td>${LIBELLES_ANOMALIE[d.type] || d.type}</td><td>${d.recommandation || '—'}</td></tr>`).join('');
+
+    const fenetre = window.open('', '_blank');
+    fenetre.document.write(`<html lang="fr"><head><meta charset="UTF-8"/><title>Rapport d'analyse odontologique — ${nomComplet}</title>
+    <style>
+      @page{size:A4;margin:18mm 16mm;} body{font-family:Georgia,serif;color:#17202a;font-size:12.5px;line-height:1.55;}
+      .entete{display:flex;justify-content:space-between;border-bottom:3px solid #0b3d3a;padding-bottom:12px;margin-bottom:18px;}
+      .bloc-identite{display:grid;grid-template-columns:1fr 1fr;gap:4px 24px;font-family:Arial;font-size:12px;margin-bottom:18px;background:#f7f8f6;border:1px solid #dfe4e2;border-radius:6px;padding:12px 16px;}
+      h2.section{font-family:Arial;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;color:#0b3d3a;border-bottom:1px solid #cdd6d4;padding-bottom:4px;margin:20px 0 8px;}
+      img{width:240px;border-radius:6px;border:1px solid #cdd6d4;}
+      table{width:100%;border-collapse:collapse;margin-top:8px;font-family:Arial;} th,td{border:1px solid #cdd6d4;padding:6px 7px;font-size:10.8px;} th{background:#eef2f0;}
+      .impression{background:#f7f8f6;border-left:3px solid #0b3d3a;padding:10px 14px;}
+      .avertissement{background:#fff8e6;border:1px solid #f0d98c;padding:12px 14px;font-size:11px;margin-top:16px;}
+      .signature{display:flex;justify-content:space-between;margin-top:42px;font-family:Arial;font-size:12px;}
+      .signature .ligne{border-top:1px solid #17202a;margin-top:36px;padding-top:4px;color:#5a6b6a;}
+      .pied{margin-top:28px;padding-top:10px;border-top:1px solid #cdd6d4;font-family:Arial;font-size:10px;color:#5a6b6a;}
+    </style></head><body>
+      <div class="entete"><div><h1 style="font-size:19px;margin:0;">RAPPORT D'ANALYSE ODONTOLOGIQUE ASSISTÉE PAR IA</h1>
+      <div style="font-family:Arial;font-size:11px;color:#5a6b6a;">Photographie intra-orale en lumière visible — analyse assistée par intelligence artificielle</div></div>
+      <div style="text-align:right;font-family:Arial;font-size:11px;color:#5a6b6a;">Édité le ${dateExamen}</div></div>
+
+      <h2 class="section">1. Informations de l'examen</h2>
+      <div class="bloc-identite">
+        <div><b>Patient</b> ${nomComplet}</div><div><b>N° dossier</b> ${patient.dossier||'—'}</div>
+        <div><b>Praticien</b> ${patient.praticien||'—'}</div><div><b>Date</b> ${dateExamen}</div>
+        <div><b>Type de caméra</b> Caméra intra-orale USB (navigateur, getUserMedia)</div>
+        <div><b>Indication clinique</b> ${patient.motif}</div>
+      </div>
+
+      <h2 class="section">2. Qualité de l'image</h2><p>${dernierResultat.commentaireQualite || '—'}</p>
+      <h2 class="section">3. Technique</h2><p>${dernierResultat.technique || "Photographie intra-orale en lumière visible. Ceci n'est pas une radiographie."}</p>
+      <h2 class="section">4. Image analysée</h2><img src="${imageCapturee}"/>
+
+      <h2 class="section">5. Analyse dent par dent</h2>
+      <table><thead><tr><th>Risque</th><th>Dent</th><th>Type</th><th>Surface</th><th>Observation visuelle</th><th>Hypothèse diagnostique</th><th>Confiance</th><th>Statut praticien</th></tr></thead>
+      <tbody>${lignes || '<tr><td colspan="8" style="text-align:center;color:#5a6b6a;">Aucune anomalie visuelle détectée</td></tr>'}</tbody></table>
+
+      <h2 class="section">6. Résumé odontogramme</h2>
+      <table><thead><tr><th>Dent</th><th>Observation</th><th>Recommandation</th></tr></thead>
+      <tbody>${lignesOdontogramme || '<tr><td colspan="3" style="text-align:center;color:#5a6b6a;">—</td></tr>'}</tbody></table>
+
+      <h2 class="section">7. Impression / synthèse</h2><div class="impression">${dernierResultat.impression || ''}</div>
+
+      <h2 class="section">8. Limites de l'analyse IA</h2>
+      <p>Une photographie intra-orale ne permet pas d'évaluer la profondeur réelle d'une lésion carieuse ni de mesurer une poche parodontale. Les scores de confiance affichés sont des estimations indicatives et ne constituent pas une probabilité clinique calibrée.</p>
+
+      <div class="avertissement"><b>Avertissement médical.</b> ${dernierResultat.avertissement || "Cet outil constitue une aide à l'examen et à la documentation clinique. Les résultats générés par l'intelligence artificielle ne constituent pas, à eux seuls, un diagnostic médical définitif. Toute anomalie doit être interprétée et confirmée par un chirurgien-dentiste qualifié, avec examens complémentaires lorsque nécessaire."}</div>
+
+      <div class="signature"><div style="width:45%"><div class="ligne">Validation du chirurgien-dentiste</div></div><div style="width:45%"><div class="ligne">Date et signature</div></div></div>
+      <div class="pied">Rapport généré par Smart Dental Vision — outil d'aide à l'analyse visuelle. Ne remplace pas le diagnostic clinique du chirurgien-dentiste.</div>
+    </body></html>`);
+    fenetre.document.close();
+    setTimeout(() => fenetre.print(), 400);
   }
 
   window.addEventListener('beforeunload', () => fluxCamera?.getTracks().forEach(p => p.stop()));
