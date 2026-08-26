@@ -91,7 +91,12 @@ void loop() {
       diagnosticHaleine = "Risque Halitose / Sécheresse critique";
       alerteAnomalie = true;
     }
-
+    // Envoi des données en JSON vers le port série
+  Serial.print("{\"type\":\"telemetrie\",\"temperature\":");
+  Serial.print(temp, 1);
+  Serial.print(",\"halene\":");
+  Serial.print(tauxSalive);
+  Serial.println("}");
     // Gestion physique immédiate de l'alerte sur le kit (GPIO 5 activé sur alerte)
     if (alerteAnomalie) {
       digitalWrite(PIN_LED_2, HIGH);
