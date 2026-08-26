@@ -677,7 +677,11 @@
     if (ligne.startsWith('{')) {
       try {
         const donnees = JSON.parse(ligne);
-        if (donnees.type === 'telemetrie') afficherTelemetrie(donnees);
+       if (donnees.type === 'telemetrie') {
+        document.getElementById("temp-valeur").innerText = donnees.temperature + " °C";
+        document.getElementById("halene-valeur").innerText = donnees.halene;
+        afficherTelemetrie(donnees);
+    }
         else if (donnees.type === 'erreur') {
           const statut = document.getElementById('statutCarte');
           statut.style.color = 'var(--rouge)';
@@ -1005,7 +1009,7 @@ Si rien de fiable n'est identifiable, retourne detections vide, codeRisqueGlobal
   }
 
   async function appelerGoogle(cle, base64, mediaType, texteUtilisateur) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(cle)}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(cle)}`;
     const reponse = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
